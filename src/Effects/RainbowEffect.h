@@ -4,6 +4,8 @@
 #include <FastLED.h>
 
 // Enhanced Rainbow Effect with multiple modes
+// Adapted for folded LED strip arrangement where LEDs at index 0 and (count-1) are at the center/hilt,
+// and LEDs at index (count/2-1) and (count/2) are at the far end
 class RainbowEffect {
 private:
   CRGB* ledArray;
@@ -13,9 +15,10 @@ private:
   uint8_t saturation;
   uint8_t speed;
   uint8_t density;     // For twinkle effect
+  bool isFolded;       // Whether the LED strip is folded
   
 public:
-  RainbowEffect(CRGB* leds, int count) {
+  RainbowEffect(CRGB* leds, int count, bool folded = true) {
     ledArray = leds;
     numLeds = count;
     mode = 0;
@@ -23,6 +26,7 @@ public:
     saturation = 240;
     speed = 30;
     density = 50; // Default density for twinkle
+    isFolded = folded;
   }
   
   void setMode(uint8_t m) {
@@ -67,12 +71,35 @@ private:
   }
   
   void updateMovingRainbow() {
-    // Create a moving rainbow pattern along the strip
-    uint8_t deltaHue = 255 / (numLeds / 2); // Calculate hue change per LED
+    uint8_t midPoint = numLeds / 2;
     
-    for (int i = 0; i < numLeds; i++) {
-      // Calculate hue based on position and current base hue
-      ledArray[i] = CHSV(hue + (i * deltaHue), saturation, 255);
+    if (isFolded) {
+      // For folded arrangement, we want the rainbow to flow from center outward
+      // or from one end to the other consistently
+      
+      // Calculate appropriate hue delta to make the pattern continuous
+      uint8_t hueSpread = 128; // Half the color wheel
+      
+      // First half - from center to far end
+      for (int i = 0; i < midPoint; i++) {
+        uint8_t pos = i;
+        uint8_t hueVal = hue + map(pos, 0, midPoint - 1, 0, hueSpread);
+        ledArray[i] = CHSV(hueVal, saturation, 255);
+      }
+      
+      // Second half - from far end back to center
+      // Continue the pattern from where first half ended
+      for (int i = midPoint; i < numLeds; i++) {
+        uint8_t pos = i - midPoint;
+        uint8_t hueVal = hue + map(pos, 0, midPoint - 1, hueSpread, 255);
+        ledArray[i] = CHSV(hueVal, saturation, 255);
+      }
+    } else {
+      // Standard moving rainbow for non-folded arrangement
+      uint8_t deltaHue = 255 / numLeds; // Calculate hue change per LED
+      for (int i = 0; i < numLeds; i++) {
+        ledArray[i] = CHSV(hue + (i * deltaHue), saturation, 255);
+      }
     }
   }
   
@@ -85,7 +112,24 @@ private:
     // Randomly light new LEDs
     for (int i = 0; i < numLeds; i++) {
       if (random8() < density / 10) { // Adjust probability based on density
-        ledArray[i] = CHSV(hue + random8(64), saturation, 255);
+        // Use a position-dependent hue for a more organized look if folded
+        uint8_t positionHue;
+        if (isFolded) {
+          uint8_t midPoint = numLeds / 2;
+          // Calculate distance from center (0 to midPoint)
+          uint8_t distFromCenter;
+          if (i < midPoint) {
+            distFromCenter = i;
+          } else {
+            distFromCenter = numLeds - 1 - i;
+          }
+          // Map distance to hue (0-255)
+          positionHue = map(distFromCenter, 0, midPoint, 0, 128);
+        } else {
+          positionHue = 0;
+        }
+        
+        ledArray[i] = CHSV(hue + positionHue + random8(64), saturation, 255);
       }
     }
   }
