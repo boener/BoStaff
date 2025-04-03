@@ -43,11 +43,16 @@ The project is structured in a modular fashion with the following key components
 4. **Rainbow Cycle**: Smooth color transitions
 5. **Strobe Effect**: Rapid flashing effects
 
+<div align="center">
+  <img src="docs/images/led-arrangement.svg" alt="LED Arrangement" width="60%">
+</div>
+
 ## 📝 Documentation
 
 - [Setup Guide](docs/setup.md): Detailed instructions for setting up the hardware and software
 - [How to Build](docs/HOWTO.md): Step-by-step instructions for building your own LED bo staff
 - [Design Notes](docs/design-notes.md): Technical decisions and architecture details
+- [LED Arrangement](docs/led-arrangement.md): Details on the folded LED strip configuration
 
 ## 🛠️ Development Setup
 
