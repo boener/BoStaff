@@ -2,7 +2,7 @@
 #define VERSION_H
 
 // Version information for BoStaff project
-#define VERSION "0.1.0"
+#define VERSION "0.1.1"
 #define BUILD_DATE __DATE__
 #define BUILD_TIME __TIME__
 
@@ -13,12 +13,12 @@
 #define FEATURE_STROBE_EFFECT 1
 
 // Hardware configuration
-#define HW_VERSION "1.0"
+#define HW_VERSION "1.1"
 #define DEFAULT_BRIGHTNESS 150
 
-// LED configuration
-#define LED_PIN_1 D1  // GPIO5
-#define LED_PIN_2 D2  // GPIO4
+// LED configuration - UPDATED PIN ASSIGNMENTS
+#define LED_PIN_1 D3  // GPIO0 - First LED strip (was D1/GPIO5)
+#define LED_PIN_2 D4  // GPIO2 - Second LED strip (was D2/GPIO4)
 #define LED_COUNT_PER_STRIP 200
 #define LED_TYPE WS2812B
 #define COLOR_ORDER GRB
@@ -29,8 +29,8 @@
 #define BUTTON_DEBOUNCE_MS 50
 
 // Accelerometer configuration
-#define MPU_I2C_SDA D2  // GPIO4
-#define MPU_I2C_SCL D1  // GPIO5
+#define MPU_I2C_SDA D2  // GPIO4 - Default I2C data pin
+#define MPU_I2C_SCL D1  // GPIO5 - Default I2C clock pin
 #define IMPACT_THRESHOLD 8000
 #define IMPACT_FLASH_DURATION_MS 100
 #define IMPACT_COOLDOWN_MS 500

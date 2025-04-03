@@ -26,6 +26,17 @@ A specialized firmware for an LED bo staff, streamlined from WLED for optimal pe
   <img src="docs/images/wiring-schematic.svg" alt="Wiring Schematic" width="80%">
 </div>
 
+### Pin Assignments
+
+> **Note:** The pin assignments have been updated to resolve conflicts between the LED strips and MPU-6050 accelerometer:
+>
+> - **LED Strip 1**: D3 (GPIO0) - was D1 (GPIO5)
+> - **LED Strip 2**: D4 (GPIO2) - was D2 (GPIO4)
+> - **MPU-6050 I2C**: D1/D2 (default I2C pins)
+> - **Button**: D6 (GPIO12) - unchanged
+>
+> See [Pin Assignments](docs/pin-assignments.md) for details and recommendations.
+
 ## 🖥️ Software Architecture
 
 The project is structured in a modular fashion with the following key components:
@@ -53,6 +64,7 @@ The project is structured in a modular fashion with the following key components
 - [How to Build](docs/HOWTO.md): Step-by-step instructions for building your own LED bo staff
 - [Design Notes](docs/design-notes.md): Technical decisions and architecture details
 - [LED Arrangement](docs/led-arrangement.md): Details on the folded LED strip configuration
+- [Pin Assignments](docs/pin-assignments.md): Details on GPIO pins used for each component
 
 ## 🛠️ Development Setup
 

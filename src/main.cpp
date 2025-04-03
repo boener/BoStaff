@@ -41,6 +41,18 @@ void setup() {
   Serial.print(F("Version: ")); Serial.println(VERSION);
   Serial.print(F("Build: ")); Serial.print(BUILD_DATE); Serial.print(" "); Serial.println(BUILD_TIME);
   
+  // Display pin configuration
+  Serial.println(F("\nPin Configuration:"));
+  Serial.print(F("LED Strip 1: ")); Serial.print(F("D3 (GPIO0)")); Serial.println(F(" - was D1 (GPIO5)"));
+  Serial.print(F("LED Strip 2: ")); Serial.print(F("D4 (GPIO2)")); Serial.println(F(" - was D2 (GPIO4)"));
+  Serial.print(F("MPU-6050 SCL: ")); Serial.println(F("D1 (GPIO5)"));
+  Serial.print(F("MPU-6050 SDA: ")); Serial.println(F("D2 (GPIO4)"));
+  Serial.print(F("Button: ")); Serial.println(F("D6 (GPIO12)"));
+  
+  // Initialize I2C for MPU-6050 (uses default pins D1/D2)
+  Wire.begin(SDA_PIN, SCL_PIN);
+  Serial.println(F("I2C initialized"));
+  
   // Load settings from flash
   settingsManager.begin();
   settingsManager.loadSettings(&config);
@@ -57,18 +69,23 @@ void setup() {
   // Initialize power management
   powerManager.begin();
   
-  // Initialize effect objects
-  fireEffect1 = new FireEffect(ledController.getLeds1(), NUM_LEDS_PER_STRIP);
-  fireEffect2 = new FireEffect(ledController.getLeds2(), NUM_LEDS_PER_STRIP, true); // reversed
+  // Initialize effect objects with correct folded arrangement
+  // true = folded arrangement (LEDs 0 and 199 at center, 99 and 100 at far end)
+  // false = linear arrangement
+  Serial.println(F("Initializing LED effects for folded strip arrangement"));
+  Serial.println(F("(LEDs 0 and 199 at center/hilt, LEDs 99 and 100 at far end)"));
   
-  pulseEffect1 = new PulseEffect(ledController.getLeds1(), NUM_LEDS_PER_STRIP);
-  pulseEffect2 = new PulseEffect(ledController.getLeds2(), NUM_LEDS_PER_STRIP);
+  // First strip - initialize with folded=true
+  fireEffect1 = new FireEffect(ledController.getLeds1(), NUM_LEDS_PER_STRIP, false, true); // not reversed, folded
+  pulseEffect1 = new PulseEffect(ledController.getLeds1(), NUM_LEDS_PER_STRIP, true); // folded
+  rainbowEffect1 = new RainbowEffect(ledController.getLeds1(), NUM_LEDS_PER_STRIP, true); // folded
+  strobeEffect1 = new StrobeEffect(ledController.getLeds1(), NUM_LEDS_PER_STRIP, true); // folded
   
-  rainbowEffect1 = new RainbowEffect(ledController.getLeds1(), NUM_LEDS_PER_STRIP);
-  rainbowEffect2 = new RainbowEffect(ledController.getLeds2(), NUM_LEDS_PER_STRIP);
-  
-  strobeEffect1 = new StrobeEffect(ledController.getLeds1(), NUM_LEDS_PER_STRIP);
-  strobeEffect2 = new StrobeEffect(ledController.getLeds2(), NUM_LEDS_PER_STRIP);
+  // Second strip - initialize with folded=true
+  fireEffect2 = new FireEffect(ledController.getLeds2(), NUM_LEDS_PER_STRIP, true, true); // reversed, folded
+  pulseEffect2 = new PulseEffect(ledController.getLeds2(), NUM_LEDS_PER_STRIP, true); // folded
+  rainbowEffect2 = new RainbowEffect(ledController.getLeds2(), NUM_LEDS_PER_STRIP, true); // folded
+  strobeEffect2 = new StrobeEffect(ledController.getLeds2(), NUM_LEDS_PER_STRIP, true); // folded
   
   // Set the initial mode
   ledController.setMode(config.currentMode);
