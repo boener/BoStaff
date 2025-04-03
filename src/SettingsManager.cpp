@@ -25,6 +25,7 @@ bool SettingsManager::loadSettings(Config* cfg) {
     
     cfg->currentMode = EEPROM.read(addr++); 
     cfg->brightness = EEPROM.read(addr++); 
+    cfg->impactBrightness = EEPROM.read(addr++); // Added impact brightness
     cfg->impactThreshold = EEPROM.read(addr++) | (EEPROM.read(addr++) << 8); 
     cfg->impactFlashDuration = EEPROM.read(addr++) | (EEPROM.read(addr++) << 8); 
     
@@ -34,7 +35,11 @@ bool SettingsManager::loadSettings(Config* cfg) {
     }
     
     if (cfg->brightness == 0) {
-      cfg->brightness = 150; // Default if invalid
+      cfg->brightness = DEFAULT_BRIGHTNESS; // Use constant from version.h
+    }
+    
+    if (cfg->impactBrightness == 0) {
+      cfg->impactBrightness = DEFAULT_IMPACT_BRIGHTNESS; // Use constant from version.h
     }
     
     Serial.println("Settings loaded from EEPROM");
@@ -57,6 +62,7 @@ void SettingsManager::saveSettings(Config* cfg) {
   
   EEPROM.write(addr++, cfg->currentMode);
   EEPROM.write(addr++, cfg->brightness);
+  EEPROM.write(addr++, cfg->impactBrightness); // Added impact brightness
   EEPROM.write(addr++, cfg->impactThreshold & 0xFF); 
   EEPROM.write(addr++, (cfg->impactThreshold >> 8) & 0xFF);
   EEPROM.write(addr++, cfg->impactFlashDuration & 0xFF);
