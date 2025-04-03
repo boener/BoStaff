@@ -2,7 +2,7 @@
 #define VERSION_H
 
 // Version information for BoStaff project
-#define VERSION "0.1.2"
+#define VERSION "0.1.3"
 #define BUILD_DATE __DATE__
 #define BUILD_TIME __TIME__
 
@@ -32,7 +32,7 @@
 // Accelerometer configuration
 #define MPU_I2C_SDA D2  // GPIO4 - Default I2C data pin
 #define MPU_I2C_SCL D1  // GPIO5 - Default I2C clock pin
-#define IMPACT_THRESHOLD 8000
+#define IMPACT_THRESHOLD 1600   // Reduced from 8000 to 1600 for better sensitivity
 #define IMPACT_FLASH_DURATION_MS 100
 #define IMPACT_COOLDOWN_MS 500
 
