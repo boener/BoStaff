@@ -4,7 +4,7 @@ void LEDController::begin(Config* cfg) {
   config = cfg;
   currentMode = config->currentMode;
   
-  // Setup the LED strips
+  // Setup the LED strips with the updated pin assignments
   FastLED.addLeds<WS2812B, LED_PIN_1, GRB>(leds1, NUM_LEDS_PER_STRIP).setCorrection(TypicalLEDStrip);
   FastLED.addLeds<WS2812B, LED_PIN_2, GRB>(leds2, NUM_LEDS_PER_STRIP).setCorrection(TypicalLEDStrip);
   

@@ -125,30 +125,30 @@
   
   <!-- Connection Lines -->
   <g stroke="#666" stroke-width="1.5" fill="none">
-    <!-- ESP to LED Strip 1 (D1 pin) -->
-    <path d="M 470,320 C 500,320 500,150 500,90" stroke="#ea4335" stroke-width="2" />
+    <!-- UPDATED: ESP to LED Strip 1 (D3 pin) -->
+    <path d="M 470,360 C 500,360 500,150 500,90" stroke="#ea4335" stroke-width="2" />
     <circle cx="500" cy="90" r="4" fill="#ea4335" />
-    <text x="505" y="320" font-family="Arial" font-size="10" fill="#333">D1 (GPIO5)</text>
+    <text x="505" y="360" font-family="Arial" font-size="10" fill="#333">D3 (GPIO0)</text>
     
-    <!-- ESP to LED Strip 2 (D2 pin) -->
-    <path d="M 470,340 C 520,340 520,160 520,90" stroke="#4285f4" stroke-width="2" />
+    <!-- UPDATED: ESP to LED Strip 2 (D4 pin) -->
+    <path d="M 470,380 C 520,380 520,160 520,90" stroke="#4285f4" stroke-width="2" />
     <circle cx="520" cy="90" r="4" fill="#4285f4" />
-    <text x="505" y="340" font-family="Arial" font-size="10" fill="#333">D2 (GPIO4)</text>
+    <text x="505" y="380" font-family="Arial" font-size="10" fill="#333">D4 (GPIO2)</text>
     
     <!-- ESP to Button (D6 pin) -->
-    <path d="M 470,360 C 550,360 580,240 600,240" stroke="#fbbc05" stroke-width="2" />
-    <circle cx="600" cy="240" r="4" fill="#fbbc05" />
-    <text x="505" y="360" font-family="Arial" font-size="10" fill="#333">D6 (GPIO12)</text>
+    <path d="M 350,360 C 250,360 230,240 200,240" stroke="#fbbc05" stroke-width="2" />
+    <circle cx="200" cy="240" r="4" fill="#fbbc05" />
+    <text x="260" y="360" font-family="Arial" font-size="10" fill="#333">D6 (GPIO12)</text>
     
-    <!-- ESP to MPU6050 SCL (D1) -->
-    <path d="M 350,320 C 300,320 270,300 230,300" stroke="#34a853" stroke-width="2" />
-    <circle cx="230" cy="300" r="4" fill="#34a853" />
-    <text x="290" y="318" font-family="Arial" font-size="10" fill="#333">D1 (SCL)</text>
+    <!-- UPDATED: ESP to MPU6050 SCL (D1) -->
+    <path d="M 470,320 C 500,320 520,300 600,300" stroke="#34a853" stroke-width="2" />
+    <circle cx="600" cy="300" r="4" fill="#34a853" />
+    <text x="505" y="320" font-family="Arial" font-size="10" fill="#333">D1 (SCL)</text>
     
-    <!-- ESP to MPU6050 SDA (D2) -->
-    <path d="M 350,340 C 300,340 270,320 230,320" stroke="#4285f4" stroke-width="2" />
-    <circle cx="230" cy="320" r="4" fill="#4285f4" />
-    <text x="290" y="338" font-family="Arial" font-size="10" fill="#333">D2 (SDA)</text>
+    <!-- UPDATED: ESP to MPU6050 SDA (D2) -->
+    <path d="M 470,340 C 500,340 520,320 600,320" stroke="#4285f4" stroke-width="2" />
+    <circle cx="600" cy="320" r="4" fill="#4285f4" />
+    <text x="505" y="340" font-family="Arial" font-size="10" fill="#333">D2 (SDA)</text>
     
     <!-- Power connections -->
     <path d="M 470,280 C 550,280 550,450 470,450" stroke="red" stroke-width="2" />
@@ -166,5 +166,17 @@
   </g>
   
   <!-- Title -->
-  <text x="400" y="30" font-family="Arial" font-size="24" font-weight="bold" text-anchor="middle" fill="#333">Bo Staff Wiring Diagram</text>
+  <text x="400" y="30" font-family="Arial" font-size="24" font-weight="bold" text-anchor="middle" fill="#333">Bo Staff Wiring Diagram (Corrected)</text>
+  
+  <!-- Notes -->
+  <g transform="translate(550, 420)">
+    <rect x="0" y="0" width="220" height="150" fill="#fff" stroke="#ccc" stroke-width="1" />
+    <text x="10" y="20" font-family="Arial" font-size="14" font-weight="bold" fill="#333">Pin Assignment Notes:</text>
+    <text x="10" y="45" font-family="Arial" font-size="12" fill="#333">• I2C for MPU6050:</text>
+    <text x="20" y="65" font-family="Arial" font-size="12" fill="#333">D1 (GPIO5): SCL</text>
+    <text x="20" y="85" font-family="Arial" font-size="12" fill="#333">D2 (GPIO4): SDA</text>
+    <text x="10" y="110" font-family="Arial" font-size="12" fill="#333">• LED Data pins:</text>
+    <text x="20" y="130" font-family="Arial" font-size="12" fill="#333">D3 (GPIO0): Strip 1</text>
+    <text x="20" y="150" font-family="Arial" font-size="12" fill="#333">D4 (GPIO2): Strip 2</text>
+  </g>
 </svg>

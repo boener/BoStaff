@@ -3,8 +3,8 @@
 bool AccelerometerHandler::begin(Config* cfg) {
   config = cfg;
   
-  // Set up the I2C connection to the MPU6050
-  Wire.begin();
+  // Set up the I2C connection to the MPU6050 using the defined pins
+  Wire.begin(SDA_PIN, SCL_PIN);
   
   // Initialize the MPU6050
   if (!mpu.begin()) {
