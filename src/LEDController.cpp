@@ -8,8 +8,9 @@ void LEDController::begin(Config* cfg) {
   FastLED.addLeds<WS2812B, LED_PIN_1, GRB>(leds1, NUM_LEDS_PER_STRIP).setCorrection(TypicalLEDStrip);
   FastLED.addLeds<WS2812B, LED_PIN_2, GRB>(leds2, NUM_LEDS_PER_STRIP).setCorrection(TypicalLEDStrip);
   
-  // Set initial brightness
-  FastLED.setBrightness(config->brightness);
+  // Set initial brightness (reduced to 75)
+  normalBrightness = config->brightness;
+  FastLED.setBrightness(normalBrightness);
   
   // Clear the LEDs to start
   fill_solid(leds1, NUM_LEDS_PER_STRIP, CRGB::Black);
@@ -21,6 +22,8 @@ void LEDController::begin(Config* cfg) {
   effectSpeed = 30; // Default speed
   
   Serial.println("LED Controller initialized");
+  Serial.print("Brightness set to: "); Serial.println(normalBrightness);
+  Serial.print("Impact brightness set to: "); Serial.println(config->impactBrightness);
 }
 
 void LEDController::update() {
@@ -29,10 +32,13 @@ void LEDController::update() {
   // Handle impact effect if active
   if (impactEffectActive) {
     if (currentMillis - impactEffectStart >= config->impactFlashDuration) {
+      // Impact effect is over, restore normal brightness
       impactEffectActive = false;
-      // Return to the normal effect
+      FastLED.setBrightness(normalBrightness);
+      Serial.println("Impact effect ended, restored normal brightness");
     } else {
-      // Show impact effect (bright white flash)
+      // Show impact effect (bright white flash with reduced brightness)
+      FastLED.setBrightness(config->impactBrightness); // Use the impact-specific brightness
       fill_solid(leds1, NUM_LEDS_PER_STRIP, CRGB::White);
       fill_solid(leds2, NUM_LEDS_PER_STRIP, CRGB::White);
       FastLED.show();
@@ -72,6 +78,7 @@ void LEDController::triggerImpactEffect() {
 }
 
 void LEDController::setBrightness(uint8_t brightness) {
+  normalBrightness = brightness;
   FastLED.setBrightness(brightness);
   config->brightness = brightness;
 }
