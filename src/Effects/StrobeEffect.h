@@ -18,6 +18,7 @@ private:
   uint8_t chance;    // Lightning strike chance (0-255)
   bool active;       // Current state of the strobe
   bool isFolded;     // Whether the LED strip is folded
+  uint8_t flashMaxBrightness; // Maximum brightness for flash (to prevent power issues)
   
 public:
   StrobeEffect(CRGB* leds, int count, bool folded = true) {
@@ -31,6 +32,7 @@ public:
     chance = 5;    // Low chance of lightning by default
     active = false;
     isFolded = folded;
+    flashMaxBrightness = 80;  // Reduced from 255 to 80 (approximately 30%)
   }
   
   void setMode(uint8_t m) {
@@ -49,15 +51,22 @@ public:
     color = c;
   }
   
+  void setFlashBrightness(uint8_t brightness) {
+    flashMaxBrightness = brightness;
+  }
+  
   void update() {
     // Different behavior based on mode
     switch (mode) {
       case 0: // Classic white strobe
-        updateClassicStrobe(CRGB::White);
+        updateClassicStrobe(CRGB(flashMaxBrightness, flashMaxBrightness, flashMaxBrightness)); // Dimmed white
         break;
         
       case 1: // Color strobe
-        updateClassicStrobe(color);
+        // Scale color to maximum brightness
+        CRGB scaledColor = color;
+        scaledColor.nscale8(flashMaxBrightness);
+        updateClassicStrobe(scaledColor);
         break;
         
       case 2: // Lightning effect
@@ -92,6 +101,9 @@ private:
     
     uint8_t midPoint = numLeds / 2;
     
+    // Reduced brightness white for lightning
+    CRGB lightningColor = CRGB(flashMaxBrightness, flashMaxBrightness, flashMaxBrightness);
+    
     // Randomly decide if we should create a lightning flash
     if (random8() < chance) {
       if (isFolded) {
@@ -100,32 +112,36 @@ private:
           // Strike near the center (hilt)
           uint8_t strikeLength = random8(midPoint / 3);
           for (int i = 0; i < strikeLength; i++) {
-            ledArray[i] = CRGB::White; // Starting from one end (center)
-            ledArray[numLeds - 1 - i] = CRGB::White; // Starting from other end (center)
+            ledArray[i] = lightningColor; // Starting from one end (center)
+            ledArray[numLeds - 1 - i] = lightningColor; // Starting from other end (center)
           }
         } else if (random8() < 128) { // 1/3 chance to strike near tip
           // Strike near the far end (tip)
           uint8_t strikeLength = random8(midPoint / 3);
           for (int i = 0; i < strikeLength; i++) {
-            ledArray[midPoint - 1 - i] = CRGB::White; // Near middle from first half
-            ledArray[midPoint + i] = CRGB::White; // Near middle from second half
+            ledArray[midPoint - 1 - i] = lightningColor; // Near middle from first half
+            ledArray[midPoint + i] = lightningColor; // Near middle from second half
           }
         } else { // 1/3 chance to strike full staff
-          // Full staff lightning
-          fill_solid(ledArray, numLeds, CRGB::White);
+          // Full staff lightning (but with reduced LEDs to save power)
+          for (int i = 0; i < numLeds; i += 3) { // Only light every 3rd LED
+            ledArray[i] = lightningColor;
+          }
         }
       } else {
-        // Full lightning for non-folded arrangement
-        fill_solid(ledArray, numLeds, CRGB::White);
+        // Full lightning for non-folded arrangement (with power saving)
+        for (int i = 0; i < numLeds; i += 3) { // Only light every 3rd LED
+          ledArray[i] = lightningColor;
+        }
       }
       
       // Schedule afterglow
       active = true;
     } else if (active) {
-      // Decay the lightning effect with afterglow
-      uint8_t fade = random8(2, 7);
+      // Decay the lightning effect with afterglow (reduced brightness)
+      uint8_t fade = random8(1, 3); // Reduced from 2-7 to 1-3
       for (int i = 0; i < numLeds; i++) {
-        if (random8() < 120) { // 47% chance for each LED
+        if (random8() < 80) { // Reduced from 120 to 80 (31% chance)
           ledArray[i] = CRGB(fade, fade, fade + random8(1, 2)); // Blue tint
         }
       }
