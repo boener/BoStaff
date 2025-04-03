@@ -2,7 +2,7 @@
 #define VERSION_H
 
 // Version information for BoStaff project
-#define VERSION "0.1.1"
+#define VERSION "0.1.2"
 #define BUILD_DATE __DATE__
 #define BUILD_TIME __TIME__
 
@@ -14,7 +14,8 @@
 
 // Hardware configuration
 #define HW_VERSION "1.1"
-#define DEFAULT_BRIGHTNESS 150
+#define DEFAULT_BRIGHTNESS 75   // Reduced from 150 to 75 (50%)
+#define DEFAULT_IMPACT_BRIGHTNESS 100 // New setting for impact flash (lower than previous 255)
 
 // LED configuration - UPDATED PIN ASSIGNMENTS
 #define LED_PIN_1 D3  // GPIO0 - First LED strip (was D1/GPIO5)
