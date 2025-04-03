@@ -25,9 +25,10 @@
 // Global configuration structure
 struct Config {
   uint8_t currentMode = EFFECT_FIRE;   // Default mode
-  uint8_t brightness = 150;            // Default brightness
+  uint8_t brightness = 75;            // Reduced from 150 to 75 (50%)
+  uint8_t impactBrightness = 100;     // New setting for impact flash brightness (separate from normal)
   uint8_t numModes = NUM_EFFECTS;      // Number of available modes
-  uint16_t impactThreshold = 8000;     // Changed from uint8_t to uint16_t to fix overflow
+  uint16_t impactThreshold = 8000;     // Acceleration threshold for impact detection
   uint16_t impactFlashDuration = 100;  // Duration of impact flash in ms
 };
 
@@ -43,6 +44,7 @@ private:
   uint8_t effectSpeed;  // Moved up in declaration order to match constructor
   unsigned long impactEffectStart;  // Moved down in declaration order to match constructor
   bool impactEffectActive;
+  uint8_t normalBrightness; // Store normal brightness to restore after impact
   
   // Effect functions
   void updateFireEffect();
@@ -53,7 +55,7 @@ private:
   
 public:
   LEDController() : currentMode(0), lastUpdate(0), effectStep(0), effectSpeed(30), 
-                    impactEffectStart(0), impactEffectActive(false) {}
+                    impactEffectStart(0), impactEffectActive(false), normalBrightness(75) {}
   
   void begin(Config* cfg);
   void update();
