@@ -56,15 +56,20 @@ public:
   }
   
   void update() {
+    // Variables declared outside case statements to avoid C++ scope errors
+    CRGB flashColor;
+    CRGB scaledColor;
+    
     // Different behavior based on mode
     switch (mode) {
       case 0: // Classic white strobe
-        updateClassicStrobe(CRGB(flashMaxBrightness, flashMaxBrightness, flashMaxBrightness)); // Dimmed white
+        flashColor = CRGB(flashMaxBrightness, flashMaxBrightness, flashMaxBrightness); // Dimmed white
+        updateClassicStrobe(flashColor);
         break;
         
       case 1: // Color strobe
         // Scale color to maximum brightness
-        CRGB scaledColor = color;
+        scaledColor = color;
         scaledColor.nscale8(flashMaxBrightness);
         updateClassicStrobe(scaledColor);
         break;
