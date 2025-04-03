@@ -1,6 +1,50 @@
 #include "BoStaff.h"
 
-// Rest of the existing code remains the same...
+bool AccelerometerHandler::begin(Config* cfg) {
+  config = cfg;
+  
+  // Set up the I2C connection to the MPU6050 using the defined pins
+  Wire.begin(SDA_PIN, SCL_PIN);
+  
+  // Initialize the MPU6050
+  if (!mpu.begin()) {
+    Serial.println("Failed to find MPU6050 chip");
+    mpuInitialized = false;
+    return false;
+  }
+  
+  // Configure the accelerometer - using 16G range for better impact detection
+  mpu.setAccelerometerRange(MPU6050_RANGE_16_G); // Changed from 8G to 16G
+  mpu.setGyroRange(MPU6050_RANGE_500_DEG);
+  mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
+  
+  // Wait for the sensor to stabilize
+  delay(100);
+  
+  mpuInitialized = true;
+  Serial.println("Accelerometer initialized with 16G range");
+  Serial.print("Impact threshold set to: ");
+  Serial.println(config->impactThreshold);
+  
+  // Initial accelerometer reading to check functionality
+  sensors_event_t a, g, temp;
+  mpu.getEvent(&a, &g, &temp);
+  
+  Serial.println("Initial accelerometer readings:");
+  Serial.print("X: "); Serial.print(a.acceleration.x);
+  Serial.print(" Y: "); Serial.print(a.acceleration.y);
+  Serial.print(" Z: "); Serial.print(a.acceleration.z);
+  Serial.println(" m/s^2");
+  
+  // Calculate and print magnitude
+  float accelMagnitude = sqrt(a.acceleration.x * a.acceleration.x + 
+                             a.acceleration.y * a.acceleration.y + 
+                             a.acceleration.z * a.acceleration.z);
+  Serial.print("Magnitude: "); Serial.print(accelMagnitude);
+  Serial.print(" m/s^2, Raw: "); Serial.println((uint16_t)(accelMagnitude * 100));
+  
+  return true;
+}
 
 void AccelerometerHandler::update() {
   if (!mpuInitialized) {
@@ -67,4 +111,27 @@ void AccelerometerHandler::update() {
     
     impactDetectedFlag = false;
   }
+}
+
+bool AccelerometerHandler::impactDetected() {
+  // Return and clear the impact flag
+  bool result = impactDetectedFlag;
+  if (result) {
+    Serial.println("Impact flag checked and returned TRUE");
+  }
+  impactDetectedFlag = false;
+  return result;
+}
+
+void AccelerometerHandler::calibrate() {
+  if (!mpuInitialized) return;
+  
+  Serial.println("Calibrating accelerometer...");
+  Serial.println("Place the bo staff on a stable surface");
+  delay(2000);
+  
+  // TODO: Implement calibration routine
+  // This would collect baseline readings and adjust the impact threshold
+  
+  Serial.println("Calibration complete");
 }
