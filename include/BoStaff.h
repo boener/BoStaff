@@ -28,7 +28,7 @@ struct Config {
   uint8_t brightness = 75;            // Reduced from 150 to 75 (50%)
   uint8_t impactBrightness = 100;     // New setting for impact flash brightness (separate from normal)
   uint8_t numModes = NUM_EFFECTS;      // Number of available modes
-  uint16_t impactThreshold = 8000;     // Acceleration threshold for impact detection
+  uint16_t impactThreshold = 1600;     // Reduced from 8000 to 1600 (~1.6G acceleration)
   uint16_t impactFlashDuration = 100;  // Duration of impact flash in ms
 };
 
