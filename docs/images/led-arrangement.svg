@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="300" viewBox="0 0 800 300">
+  <!-- Background -->
+  <rect width="800" height="300" fill="#f8f9fa" />
+  
+  <!-- Title -->
+  <text x="400" y="30" font-family="Arial" font-size="20" font-weight="bold" text-anchor="middle" fill="#333">Bo Staff LED Arrangement</text>
+  
+  <!-- Bo Staff Structure -->
+  <g>
+    <!-- Left Pole -->
+    <rect x="100" y="100" width="250" height="60" rx="5" ry="5" fill="#d0d0d0" stroke="#666" stroke-width="2" />
+    
+    <!-- Right Pole -->
+    <rect x="450" y="100" width="250" height="60" rx="5" ry="5" fill="#d0d0d0" stroke="#666" stroke-width="2" />
+    
+    <!-- Center Housing -->
+    <rect x="350" y="90" width="100" height="80" rx="5" ry="5" fill="#a0a0a0" stroke="#666" stroke-width="2" />
+
+    <!-- Text Labels for Housing -->
+    <text x="400" y="130" font-family="Arial" font-size="12" text-anchor="middle" fill="#333">Center</text>
+    <text x="400" y="145" font-family="Arial" font-size="12" text-anchor="middle" fill="#333">Housing</text>
+  </g>
+  
+  <!-- LED Arrangement Lines -->
+  <g>
+    <!-- Strip 1 -->
+    <path d="M 400,90 L 400,70 L 150,70 L 150,100" stroke="#ea4335" stroke-width="2" fill="none" stroke-dasharray="5,3" />
+    <path d="M 150,100 L 150,190 L 350,190 L 350,90" stroke="#ea4335" stroke-width="2" fill="none" />
+    
+    <!-- Strip 2 -->
+    <path d="M 400,90 L 400,50 L 650,50 L 650,100" stroke="#4285f4" stroke-width="2" fill="none" stroke-dasharray="5,3" />
+    <path d="M 650,100 L 650,190 L 450,190 L 450,90" stroke="#4285f4" stroke-width="2" fill="none" />
+  </g>
+  
+  <!-- LED Position Markers -->
+  <g>
+    <!-- Strip 1 -->
+    <circle cx="400" cy="70" r="5" fill="#ea4335" />
+    <text x="410" y="70" font-family="Arial" font-size="10" fill="#333">LED 0 (Center)</text>
+    
+    <circle cx="150" cy="130" r="5" fill="#ea4335" />
+    <text x="140" y="120" font-family="Arial" font-size="10" text-anchor="end" fill="#333">LED 99 (Far End)</text>
+    
+    <circle cx="350" cy="160" r="5" fill="#ea4335" />
+    <text x="340" y="160" font-family="Arial" font-size="10" text-anchor="end" fill="#333">LED 199 (Center)</text>
+    
+    <!-- Strip 2 -->
+    <circle cx="400" cy="50" r="5" fill="#4285f4" />
+    <text x="410" y="50" font-family="Arial" font-size="10" fill="#333">LED 0 (Center)</text>
+    
+    <circle cx="650" cy="130" r="5" fill="#4285f4" />
+    <text x="660" y="120" font-family="Arial" font-size="10" fill="#333">LED 99 (Far End)</text>
+    
+    <circle cx="450" cy="160" r="5" fill="#4285f4" />
+    <text x="460" y="160" font-family="Arial" font-size="10" fill="#333">LED 199 (Center)</text>
+  </g>
+  
+  <!-- Directional Arrows -->
+  <g>
+    <!-- Strip 1 Arrows -->
+    <path d="M 350,70 L 300,70" stroke="#ea4335" stroke-width="1" fill="none" marker-end="url(#arrowhead)" />
+    <path d="M 150,150 L 150,170" stroke="#ea4335" stroke-width="1" fill="none" marker-end="url(#arrowhead)" />
+    <path d="M 200,190 L 250,190" stroke="#ea4335" stroke-width="1" fill="none" marker-end="url(#arrowhead)" />
+    
+    <!-- Strip 2 Arrows -->
+    <path d="M 450,50 L 500,50" stroke="#4285f4" stroke-width="1" fill="none" marker-end="url(#arrowhead)" />
+    <path d="M 650,150 L 650,170" stroke="#4285f4" stroke-width="1" fill="none" marker-end="url(#arrowhead)" />
+    <path d="M 600,190 L 550,190" stroke="#4285f4" stroke-width="1" fill="none" marker-end="url(#arrowhead)" />
+  </g>
+  
+  <!-- Markers -->
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#666" />
+    </marker>
+  </defs>
+  
+  <!-- Legend -->
+  <g transform="translate(300, 220)">
+    <rect x="0" y="0" width="200" height="70" fill="#fff" stroke="#ccc" stroke-width="1" />
+    <text x="10" y="20" font-family="Arial" font-size="12" font-weight="bold" fill="#333">Legend:</text>
+    
+    <line x1="10" y1="35" x2="40" y2="35" stroke="#ea4335" stroke-width="2" />
+    <text x="45" y="38" font-family="Arial" font-size="10" fill="#333">Strip 1 (Left Side)</text>
+    
+    <line x1="10" y1="55" x2="40" y2="55" stroke="#4285f4" stroke-width="2" />
+    <text x="45" y="58" font-family="Arial" font-size="10" fill="#333">Strip 2 (Right Side)</text>
+  </g>
+  
+  <!-- Explanation -->
+  <text x="400" y="220" font-family="Arial" font-size="14" font-weight="bold" text-anchor="middle" fill="#333">Folded LED Strip Arrangement</text>
+  <text x="400" y="240" font-family="Arial" font-size="12" text-anchor="middle" fill="#333">Each strip runs from center to far end and back to center</text>
+  <text x="400" y="260" font-family="Arial" font-size="12" text-anchor="middle" fill="#333">LEDs 0 and 199 are physically near each other in the center housing</text>
+  <text x="400" y="280" font-family="Arial" font-size="12" text-anchor="middle" fill="#333">LED 99 connects to LED 100 at the far end of each tube</text>
+</svg>
