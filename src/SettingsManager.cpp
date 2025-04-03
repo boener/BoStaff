@@ -1,5 +1,6 @@
 #include "BoStaff.h"
 #include <EEPROM.h>
+#include "../src/version.h" // Include version.h for constants
 
 // EEPROM size for ESP8266
 #define EEPROM_SIZE 512
@@ -26,8 +27,15 @@ bool SettingsManager::loadSettings(Config* cfg) {
     cfg->currentMode = EEPROM.read(addr++); 
     cfg->brightness = EEPROM.read(addr++); 
     cfg->impactBrightness = EEPROM.read(addr++); // Added impact brightness
-    cfg->impactThreshold = EEPROM.read(addr++) | (EEPROM.read(addr++) << 8); 
-    cfg->impactFlashDuration = EEPROM.read(addr++) | (EEPROM.read(addr++) << 8); 
+    
+    // Read 16-bit values
+    byte lowByte = EEPROM.read(addr++);
+    byte highByte = EEPROM.read(addr++);
+    cfg->impactThreshold = lowByte | (highByte << 8);
+    
+    lowByte = EEPROM.read(addr++);
+    highByte = EEPROM.read(addr++);
+    cfg->impactFlashDuration = lowByte | (highByte << 8);
     
     // Validate settings
     if (cfg->currentMode >= cfg->numModes) {
@@ -35,11 +43,11 @@ bool SettingsManager::loadSettings(Config* cfg) {
     }
     
     if (cfg->brightness == 0) {
-      cfg->brightness = DEFAULT_BRIGHTNESS; // Use constant from version.h
+      cfg->brightness = 75; // Use hardcoded default if invalid
     }
     
     if (cfg->impactBrightness == 0) {
-      cfg->impactBrightness = DEFAULT_IMPACT_BRIGHTNESS; // Use constant from version.h
+      cfg->impactBrightness = 100; // Use hardcoded default if invalid
     }
     
     Serial.println("Settings loaded from EEPROM");
