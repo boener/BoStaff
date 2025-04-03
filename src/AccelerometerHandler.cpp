@@ -79,19 +79,34 @@ void AccelerometerHandler::update() {
     lastPrint = millis();
   }
   
+  // Enhance impact detection logging
+  Serial.print("DEBUG: accelRaw = "); Serial.print(accelRaw);
+  Serial.print(", Threshold = "); Serial.print(config->impactThreshold);
+  Serial.print(", Last Impact Time = "); Serial.print(lastImpactTime);
+  Serial.print(", Current Time = "); Serial.print(millis());
+  Serial.print(", Cooldown = "); Serial.println(impactCooldown);
+  
   // Check for impact (with cooldown to prevent multiple triggers)
-  // Using a much lower threshold of 1600 (about 16 m/s^2 or ~1.6G)
+  // Lowered threshold for easier testing
   if (accelRaw > config->impactThreshold && 
       (millis() - lastImpactTime > impactCooldown)) {
     impactDetectedFlag = true;
     lastImpactTime = millis();
     
-    Serial.print("IMPACT DETECTED! Magnitude: ");
-    Serial.print(accelRaw);
-    Serial.print(" (Threshold: ");
-    Serial.print(config->impactThreshold);
+    Serial.println("!!! IMPACT DETECTED !!!");
+    Serial.print("Magnitude: "); Serial.print(accelRaw);
+    Serial.print(" (Threshold: "); Serial.print(config->impactThreshold);
     Serial.println(")");
   } else {
+    // Only log when impact is not detected for additional insights
+    if (accelRaw <= config->impactThreshold) {
+      Serial.println("No impact: Acceleration below threshold");
+    }
+    
+    if (millis() - lastImpactTime <= impactCooldown) {
+      Serial.println("No impact: Within cooldown period");
+    }
+    
     impactDetectedFlag = false;
   }
 }
@@ -99,6 +114,9 @@ void AccelerometerHandler::update() {
 bool AccelerometerHandler::impactDetected() {
   // Return and clear the impact flag
   bool result = impactDetectedFlag;
+  if (result) {
+    Serial.println("Impact flag checked and returned TRUE");
+  }
   impactDetectedFlag = false;
   return result;
 }
