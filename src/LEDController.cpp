@@ -48,10 +48,8 @@ void LEDController::update() {
     updateSolidEffect();
   }
   
-  // Update the LEDs only if no external effects have updated them
-  if (currentMode == EFFECT_SOLID) {
-    FastLED.show();
-  }
+  // FIXED: Update the LEDs for ALL modes, not just SOLID mode
+  FastLED.show();
   
   // Increment effect step for animations
   effectStep++;
