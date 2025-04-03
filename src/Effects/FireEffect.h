@@ -22,8 +22,8 @@ public:
     numLeds = count;
     reversed = reverse;
     isFolded = folded;
-    cooling = 55;   // Default cooling value
-    sparking = 120; // Default sparking value
+    cooling = 85;   // Increased from 55 to create faster cooling
+    sparking = 90;  // Reduced from 120 to control spark generation
     
     // Allocate the heat array
     heat = new byte[numLeds];
