@@ -28,12 +28,7 @@ struct EffectParams {
 };
 
 // Effect names for display/debugging
-const char* EFFECT_NAMES[] = {
-  "Solid Color",
-  "Fire",
-  "Energy Pulse",
-  "Rainbow",
-  "Strobe"
-};
+// Added 'extern' to avoid multiple definitions
+extern const char* EFFECT_NAMES[];
 
 #endif // EFFECTS_H
