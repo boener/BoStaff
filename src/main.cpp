@@ -63,24 +63,54 @@ void initializeAllEffects() {
   strobeEffect2 = nullptr;
   
   // Now create all effects fresh
+  bool allEffectsInitialized = true;
+  
+  // Try to create FireEffect instances
   fireEffect1 = new FireEffect(ledController.getLeds1(), NUM_LEDS_PER_STRIP, false, true); // not reversed, folded
   fireEffect2 = new FireEffect(ledController.getLeds2(), NUM_LEDS_PER_STRIP, true, true); // reversed, folded
   
+  if (!fireEffect1 || !fireEffect1->isInitialized() || !fireEffect2 || !fireEffect2->isInitialized()) {
+    Serial.println(F("Error initializing FireEffect!"));
+    allEffectsInitialized = false;
+  }
+  
+  // Try to create PulseEffect instances
   pulseEffect1 = new PulseEffect(ledController.getLeds1(), NUM_LEDS_PER_STRIP, true); // folded
   pulseEffect2 = new PulseEffect(ledController.getLeds2(), NUM_LEDS_PER_STRIP, true); // folded
   
+  if (!pulseEffect1 || !pulseEffect2) {
+    Serial.println(F("Error initializing PulseEffect!"));
+    allEffectsInitialized = false;
+  }
+  
+  // Try to create RainbowEffect instances
   rainbowEffect1 = new RainbowEffect(ledController.getLeds1(), NUM_LEDS_PER_STRIP, true); // folded
   rainbowEffect2 = new RainbowEffect(ledController.getLeds2(), NUM_LEDS_PER_STRIP, true); // folded
   
+  if (!rainbowEffect1 || !rainbowEffect2) {
+    Serial.println(F("Error initializing RainbowEffect!"));
+    allEffectsInitialized = false;
+  }
+  
+  // Try to create StrobeEffect instances
   strobeEffect1 = new StrobeEffect(ledController.getLeds1(), NUM_LEDS_PER_STRIP, true); // folded
   strobeEffect2 = new StrobeEffect(ledController.getLeds2(), NUM_LEDS_PER_STRIP, true); // folded
+  
+  if (!strobeEffect1 || !strobeEffect2) {
+    Serial.println(F("Error initializing StrobeEffect!"));
+    allEffectsInitialized = false;
+  }
   
   // Clear the LED arrays to ensure clean start
   fill_solid(ledController.getLeds1(), NUM_LEDS_PER_STRIP, CRGB::Black);
   fill_solid(ledController.getLeds2(), NUM_LEDS_PER_STRIP, CRGB::Black);
   FastLED.show();
   
-  Serial.println(F("All LED effects initialized"));
+  if (allEffectsInitialized) {
+    Serial.println(F("All LED effects initialized successfully"));
+  } else {
+    Serial.println(F("WARNING: Some LED effects failed to initialize properly"));
+  }
 }
 
 void setup() {
@@ -259,9 +289,13 @@ void loop() {
   // Update LED effects based on current mode
   switch (config.currentMode) {
     case EFFECT_FIRE:
-      if (fireEffect1 && fireEffect2) {
+      if (fireEffect1 && fireEffect2 && fireEffect1->isInitialized() && fireEffect2->isInitialized()) {
         fireEffect1->update();
         fireEffect2->update();
+      } else {
+        // Fallback to a simple effect if fire effect is not available
+        fill_solid(ledController.getLeds1(), NUM_LEDS_PER_STRIP, CRGB::Red);
+        fill_solid(ledController.getLeds2(), NUM_LEDS_PER_STRIP, CRGB::Red);
       }
       break;
       
@@ -269,6 +303,10 @@ void loop() {
       if (pulseEffect1 && pulseEffect2) {
         pulseEffect1->update();
         pulseEffect2->update();
+      } else {
+        // Fallback effect
+        fill_solid(ledController.getLeds1(), NUM_LEDS_PER_STRIP, CRGB::Blue);
+        fill_solid(ledController.getLeds2(), NUM_LEDS_PER_STRIP, CRGB::Blue);
       }
       break;
       
@@ -276,6 +314,10 @@ void loop() {
       if (rainbowEffect1 && rainbowEffect2) {
         rainbowEffect1->update();
         rainbowEffect2->update();
+      } else {
+        // Fallback effect
+        fill_solid(ledController.getLeds1(), NUM_LEDS_PER_STRIP, CRGB::Green);
+        fill_solid(ledController.getLeds2(), NUM_LEDS_PER_STRIP, CRGB::Green);
       }
       break;
       
@@ -283,6 +325,10 @@ void loop() {
       if (strobeEffect1 && strobeEffect2) {
         strobeEffect1->update();
         strobeEffect2->update();
+      } else {
+        // Fallback effect
+        fill_solid(ledController.getLeds1(), NUM_LEDS_PER_STRIP, CRGB::White);
+        fill_solid(ledController.getLeds2(), NUM_LEDS_PER_STRIP, CRGB::White);
       }
       break;
       

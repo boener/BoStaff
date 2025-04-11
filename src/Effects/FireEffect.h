@@ -15,31 +15,29 @@ private:
   uint8_t sparking;
   bool reversed;
   bool isFolded; // Whether the LED strip is folded
+  bool initialized; // New flag to track initialization status
   
 public:
-  FireEffect(CRGB* leds, int count, bool reverse = false, bool folded = true) {
+  FireEffect(CRGB* leds, int count, bool reverse = false, bool folded = true) : 
+    ledArray(nullptr), numLeds(0), heat(nullptr), cooling(85), sparking(90),
+    reversed(reverse), isFolded(folded), initialized(false) {
+    
     // Validate inputs
     if (!leds || count <= 0) {
       // Handle invalid input
-      ledArray = nullptr;
-      numLeds = 0;
-      heat = nullptr;
       Serial.println("ERROR: FireEffect created with invalid parameters");
       return;
     }
     
     ledArray = leds;
     numLeds = count;
-    reversed = reverse;
-    isFolded = folded;
-    cooling = 85;   // Increased from 55 to create faster cooling
-    sparking = 90;  // Reduced from 120 to control spark generation
     
     // Allocate the heat array
     heat = new byte[numLeds];
     if (heat) {
       // Initialize all elements to zero
       memset(heat, 0, numLeds);
+      initialized = true; // Mark as successfully initialized
     } else {
       Serial.println("ERROR: FireEffect failed to allocate heat array");
       numLeds = 0; // Mark as invalid
@@ -51,6 +49,12 @@ public:
       delete[] heat;
       heat = nullptr;  // Prevent double deletion
     }
+    initialized = false;
+    ledArray = nullptr; // Don't delete ledArray as it's managed elsewhere
+  }
+  
+  bool isInitialized() const {
+    return initialized && heat != nullptr && ledArray != nullptr;
   }
   
   void setCooling(uint8_t cool) {
@@ -62,8 +66,14 @@ public:
   }
   
   void update() {
-    // Safety check - make sure we have valid memory
-    if (!ledArray || !heat || numLeds <= 0) {
+    // Safety check - make sure we have valid memory and initialization
+    if (!isInitialized() || numLeds <= 0) {
+      // Log error only once to avoid console spam
+      static bool errorLogged = false;
+      if (!errorLogged) {
+        Serial.println("ERROR: FireEffect update called on uninitialized effect");
+        errorLogged = true;
+      }
       return;
     }
     

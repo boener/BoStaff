@@ -19,7 +19,7 @@ enum EffectType {
 
 // Helper struct to store effect parameters
 struct EffectParams {
-  uint8_t brightness = 150;
+  uint8_t brightness = 25;  // Reduced from 150 to 25 (~10%)
   uint8_t speed = 128;
   uint8_t intensity = 128;
   uint8_t param1 = 128;  // Custom parameter 1

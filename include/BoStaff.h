@@ -25,8 +25,8 @@
 // Global configuration structure
 struct Config {
   uint8_t currentMode = EFFECT_FIRE;   // Default mode
-  uint8_t brightness = 75;            // Reduced from 150 to 75 (50%)
-  uint8_t impactBrightness = 100;     // New setting for impact flash brightness (separate from normal)
+  uint8_t brightness = 25;            // Reduced from 75 to 25 (10% of 255)
+  uint8_t impactBrightness = 100;     // Impact flash brightness (40% of 255)
   uint8_t numModes = NUM_EFFECTS;      // Number of available modes
   uint16_t impactThreshold = 1600;     // Reduced from 8000 to 1600 (~1.6G acceleration)
   uint16_t impactFlashDuration = 100;  // Duration of impact flash in ms
@@ -55,7 +55,7 @@ private:
   
 public:
   LEDController() : currentMode(0), lastUpdate(0), effectStep(0), effectSpeed(30), 
-                    impactEffectStart(0), impactEffectActive(false), normalBrightness(75) {}
+                    impactEffectStart(0), impactEffectActive(false), normalBrightness(25) {}
   
   void begin(Config* cfg);
   void update();

@@ -15,24 +15,26 @@ private:
   uint8_t hueStep;
   uint8_t waveCount;
   bool isFolded; // Whether the LED strip is folded
+  bool initialized; // New flag to track initialization status
   
 public:
-  PulseEffect(CRGB* leds, int count, bool folded = true) {
+  PulseEffect(CRGB* leds, int count, bool folded = true) : 
+    ledArray(nullptr), numLeds(0), hue(0), baseHue(0), hueStep(1), 
+    waveCount(1), isFolded(folded), initialized(false) {
+    
     // Validate inputs
     if (!leds || count <= 0) {
-      // Handle invalid input
-      ledArray = nullptr;
-      numLeds = 0;
       Serial.println("ERROR: PulseEffect created with invalid parameters");
       return;
     }
     
     ledArray = leds;
     numLeds = count;
-    baseHue = 0;
-    hueStep = 1;
-    waveCount = 1; // Number of wave pulses
-    isFolded = folded;
+    initialized = true;
+  }
+  
+  bool isInitialized() const {
+    return initialized && ledArray != nullptr && numLeds > 0;
   }
   
   void setHue(uint8_t newHue) {
@@ -46,8 +48,14 @@ public:
   }
   
   void update() {
-    // Safety check - make sure we have valid memory
-    if (!ledArray || numLeds <= 0) {
+    // Safety check - make sure we have valid memory and initialization
+    if (!isInitialized()) {
+      // Log error only once to avoid console spam
+      static bool errorLogged = false;
+      if (!errorLogged) {
+        Serial.println("ERROR: PulseEffect update called on uninitialized effect");
+        errorLogged = true;
+      }
       return;
     }
     
@@ -82,12 +90,14 @@ public:
       uint16_t brightness = 0; // Use uint16_t to prevent overflow during addition
       
       for (uint8_t w = 1; w <= waveCount; w++) {
-        uint8_t b = beatsin8(10 * w, 0, 255 / max(w, 1), 0, distanceFromCenter * 8);
+        // Fix max() by making both arguments the same type (uint8_t)
+        uint8_t divisor = (w > 1) ? w : uint8_t(1);
+        uint8_t b = beatsin8(10 * w, 0, 255 / divisor, 0, distanceFromCenter * 8);
         brightness += b;
       }
       
-      // Constrain brightness to avoid overflow
-      brightness = min(brightness, 255);
+      // Fix min() by making both arguments the same type (uint16_t)
+      brightness = (brightness > uint16_t(255)) ? uint16_t(255) : brightness;
       
       // Calculate hue variation based on distance from center
       uint8_t hueVar = baseHue + distanceFromCenter;

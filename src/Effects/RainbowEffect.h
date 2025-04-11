@@ -16,26 +16,26 @@ private:
   uint8_t speed;
   uint8_t density;     // For twinkle effect
   bool isFolded;       // Whether the LED strip is folded
+  bool initialized;    // New flag to track initialization status
   
 public:
-  RainbowEffect(CRGB* leds, int count, bool folded = true) {
+  RainbowEffect(CRGB* leds, int count, bool folded = true) : 
+    ledArray(nullptr), numLeds(0), mode(0), hue(0), saturation(240), 
+    speed(30), density(50), isFolded(folded), initialized(false) {
+    
     // Validate inputs
     if (!leds || count <= 0) {
-      // Handle invalid input
-      ledArray = nullptr;
-      numLeds = 0;
       Serial.println("ERROR: RainbowEffect created with invalid parameters");
       return;
     }
     
     ledArray = leds;
     numLeds = count;
-    mode = 0;
-    hue = 0;
-    saturation = 240;
-    speed = 30;
-    density = 50; // Default density for twinkle
-    isFolded = folded;
+    initialized = true;
+  }
+  
+  bool isInitialized() const {
+    return initialized && ledArray != nullptr && numLeds > 0;
   }
   
   void setMode(uint8_t m) {
@@ -55,8 +55,14 @@ public:
   }
   
   void update() {
-    // Safety check - make sure we have valid memory
-    if (!ledArray || numLeds <= 0) {
+    // Safety check - make sure we have valid memory and initialization
+    if (!isInitialized()) {
+      // Log error only once to avoid console spam
+      static bool errorLogged = false;
+      if (!errorLogged) {
+        Serial.println("ERROR: RainbowEffect update called on uninitialized effect");
+        errorLogged = true;
+      }
       return;
     }
     
@@ -86,7 +92,7 @@ private:
   
   void updateMovingRainbow() {
     // Safety check again
-    if (!ledArray || numLeds <= 0) return;
+    if (!isInitialized()) return;
     
     uint8_t midPoint = numLeds / 2;
     
@@ -128,7 +134,7 @@ private:
   
   void updateRainbowTwinkle() {
     // Safety check again
-    if (!ledArray || numLeds <= 0) return;
+    if (!isInitialized()) return;
     
     // Fade all LEDs slightly each frame
     for (int i = 0; i < numLeds; i++) {
@@ -139,7 +145,9 @@ private:
     
     // Randomly light new LEDs
     for (int i = 0; i < numLeds; i++) {
-      if (random8() < density / 10) { // Adjust probability based on density
+      // Use uint8_t for division to avoid type mismatches
+      uint8_t probability = density / uint8_t(10);
+      if (random8() < probability) { // Adjust probability based on density
         // Use a position-dependent hue for a more organized look if folded
         uint8_t positionHue;
         if (isFolded) {

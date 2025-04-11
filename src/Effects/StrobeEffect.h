@@ -19,29 +19,27 @@ private:
   bool active;       // Current state of the strobe
   bool isFolded;     // Whether the LED strip is folded
   uint8_t flashMaxBrightness; // Maximum brightness for flash (to prevent power issues)
+  bool initialized;  // New flag to track initialization status
   
 public:
-  StrobeEffect(CRGB* leds, int count, bool folded = true) {
+  StrobeEffect(CRGB* leds, int count, bool folded = true) : 
+    ledArray(nullptr), numLeds(0), mode(0), speed(50), duty(10),
+    color(CRGB::White), count(0), chance(5), active(false), 
+    isFolded(folded), flashMaxBrightness(25), initialized(false) {
+    
     // Validate inputs
     if (!leds || count <= 0) {
-      // Handle invalid input
-      ledArray = nullptr;
-      numLeds = 0;
       Serial.println("ERROR: StrobeEffect created with invalid parameters");
       return;
     }
     
     ledArray = leds;
     numLeds = count;
-    mode = 0;
-    speed = 50;
-    duty = 10;     // 10% on, 90% off by default
-    color = CRGB::White;
-    count = 0;
-    chance = 5;    // Low chance of lightning by default
-    active = false;
-    isFolded = folded;
-    flashMaxBrightness = 80;  // Reduced from 255 to 80 (approximately 30%)
+    initialized = true;
+  }
+  
+  bool isInitialized() const {
+    return initialized && ledArray != nullptr && numLeds > 0;
   }
   
   void setMode(uint8_t m) {
@@ -53,7 +51,10 @@ public:
   }
   
   void setDuty(uint8_t d) {
-    duty = constrain(d, 1, 99); // Prevent 0% or 100%
+    // Use explicit cast for comparison to avoid type mismatch
+    if (d < uint8_t(1)) d = 1;
+    if (d > uint8_t(99)) d = 99;
+    duty = d;
   }
   
   void setColor(CRGB c) {
@@ -65,8 +66,14 @@ public:
   }
   
   void update() {
-    // Safety check - make sure we have valid memory
-    if (!ledArray || numLeds <= 0) {
+    // Safety check - make sure we have valid memory and initialization
+    if (!isInitialized()) {
+      // Log error only once to avoid console spam
+      static bool errorLogged = false;
+      if (!errorLogged) {
+        Serial.println("ERROR: StrobeEffect update called on uninitialized effect");
+        errorLogged = true;
+      }
       return;
     }
     
@@ -99,11 +106,13 @@ public:
 private:
   void updateClassicStrobe(CRGB flashColor) {
     // Safety check again
-    if (!ledArray || numLeds <= 0) return;
+    if (!isInitialized()) return;
     
     // Calculate period based on speed
     uint16_t period = 255 - speed; // Higher speed = shorter period
-    if (period < 10) period = 10;  // Prevent ultra-fast flashing
+    
+    // Use explicit cast for comparison to avoid type mismatch
+    if (period < uint16_t(10)) period = 10;  // Prevent ultra-fast flashing
     
     // Calculate timing
     uint16_t onTime = (period * duty) / 100;
@@ -121,7 +130,7 @@ private:
   
   void updateLightning() {
     // Safety check again
-    if (!ledArray || numLeds <= 0) return;
+    if (!isInitialized()) return;
     
     // Reset all LEDs to black first
     fill_solid(ledArray, numLeds, CRGB::Black);
