@@ -34,6 +34,12 @@ StrobeEffect* strobeEffect2 = nullptr;
 // Effect parameters
 EffectParams effectParams[NUM_EFFECTS];
 
+// Variables for calibration trigger
+const unsigned long CALIBRATION_LONG_PRESS = 5000; // 5 seconds for calibration trigger
+bool calibrationMode = false;
+unsigned long buttonPressStart = 0;
+bool buttonWasPressed = false;
+
 void setup() {
   // Initialize serial communication
   Serial.begin(SERIAL_BAUD);
@@ -97,9 +103,67 @@ void setup() {
   float batteryPercentage = powerManager.getBatteryPercentage();
   Serial.print(F("Battery: ")); Serial.print(batteryVoltage); Serial.print(F("V, ")); 
   Serial.print(batteryPercentage); Serial.println(F("%"));
+  
+  // Print calibration instructions
+  Serial.println(F("\nTo enter accelerometer calibration mode,"));
+  Serial.println(F("hold the button for 5 seconds until all LEDs flash blue."));
 }
 
 void loop() {
+  // Check for calibration mode trigger (long button press)
+  if (digitalRead(BTN_PIN) == LOW) {  // Button pressed (active LOW)
+    if (!buttonWasPressed) {
+      buttonWasPressed = true;
+      buttonPressStart = millis();
+    } else if (!calibrationMode && (millis() - buttonPressStart) > CALIBRATION_LONG_PRESS) {
+      // Long press detected, enter calibration mode
+      calibrationMode = true;
+      
+      // Visual feedback - flash LEDs blue to indicate calibration mode
+      for (int i = 0; i < NUM_LEDS_PER_STRIP; i++) {
+        ledController.getLeds1()[i] = CRGB::Blue;
+        ledController.getLeds2()[i] = CRGB::Blue;
+      }
+      FastLED.show();
+      delay(500);
+      FastLED.clear();
+      FastLED.show();
+      delay(500);
+      
+      Serial.println(F("\n*** ENTERING CALIBRATION MODE ***"));
+      
+      // Start the calibration process
+      accelHandler.calibrate();
+      
+      // Save the new threshold value
+      settingsManager.saveSettings(&config);
+      
+      Serial.print(F("New impact threshold saved: "));
+      Serial.println(config.impactThreshold);
+      
+      // Visual feedback - flash LEDs green to indicate calibration complete
+      for (int i = 0; i < NUM_LEDS_PER_STRIP; i++) {
+        ledController.getLeds1()[i] = CRGB::Green;
+        ledController.getLeds2()[i] = CRGB::Green;
+      }
+      FastLED.show();
+      delay(1000);
+      
+      // Reset calibration mode
+      calibrationMode = false;
+      
+      // Restore current LED effect
+      ledController.setMode(config.currentMode);
+    }
+  } else {
+    buttonWasPressed = false;  // Button released
+  }
+  
+  // Skip normal operation while in calibration mode
+  if (calibrationMode) {
+    return;
+  }
+  
   // Update button state
   buttonHandler.handle();
   
