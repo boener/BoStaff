@@ -22,6 +22,15 @@ private:
   
 public:
   StrobeEffect(CRGB* leds, int count, bool folded = true) {
+    // Validate inputs
+    if (!leds || count <= 0) {
+      // Handle invalid input
+      ledArray = nullptr;
+      numLeds = 0;
+      Serial.println("ERROR: StrobeEffect created with invalid parameters");
+      return;
+    }
+    
     ledArray = leds;
     numLeds = count;
     mode = 0;
@@ -56,6 +65,11 @@ public:
   }
   
   void update() {
+    // Safety check - make sure we have valid memory
+    if (!ledArray || numLeds <= 0) {
+      return;
+    }
+    
     // Variables declared outside case statements to avoid C++ scope errors
     CRGB flashColor;
     CRGB scaledColor;
@@ -84,6 +98,9 @@ public:
   
 private:
   void updateClassicStrobe(CRGB flashColor) {
+    // Safety check again
+    if (!ledArray || numLeds <= 0) return;
+    
     // Calculate period based on speed
     uint16_t period = 255 - speed; // Higher speed = shorter period
     if (period < 10) period = 10;  // Prevent ultra-fast flashing
@@ -96,11 +113,16 @@ private:
     
     // Apply to all LEDs
     for (int i = 0; i < numLeds; i++) {
-      ledArray[i] = isOn ? flashColor : CRGB::Black;
+      if (i >= 0 && i < numLeds) { // Bounds check
+        ledArray[i] = isOn ? flashColor : CRGB::Black;
+      }
     }
   }
   
   void updateLightning() {
+    // Safety check again
+    if (!ledArray || numLeds <= 0) return;
+    
     // Reset all LEDs to black first
     fill_solid(ledArray, numLeds, CRGB::Black);
     
@@ -117,26 +139,44 @@ private:
           // Strike near the center (hilt)
           uint8_t strikeLength = random8(midPoint / 3);
           for (int i = 0; i < strikeLength; i++) {
-            ledArray[i] = lightningColor; // Starting from one end (center)
-            ledArray[numLeds - 1 - i] = lightningColor; // Starting from other end (center)
+            if (i >= 0 && i < numLeds) { // Bounds check
+              ledArray[i] = lightningColor; // Starting from one end (center)
+            }
+            
+            int opposite = numLeds - 1 - i;
+            if (opposite >= 0 && opposite < numLeds) { // Bounds check
+              ledArray[opposite] = lightningColor; // Starting from other end (center)
+            }
           }
         } else if (random8() < 128) { // 1/3 chance to strike near tip
           // Strike near the far end (tip)
           uint8_t strikeLength = random8(midPoint / 3);
           for (int i = 0; i < strikeLength; i++) {
-            ledArray[midPoint - 1 - i] = lightningColor; // Near middle from first half
-            ledArray[midPoint + i] = lightningColor; // Near middle from second half
+            int idx1 = midPoint - 1 - i;
+            int idx2 = midPoint + i;
+            
+            if (idx1 >= 0 && idx1 < numLeds) { // Bounds check
+              ledArray[idx1] = lightningColor; // Near middle from first half
+            }
+            
+            if (idx2 >= 0 && idx2 < numLeds) { // Bounds check
+              ledArray[idx2] = lightningColor; // Near middle from second half
+            }
           }
         } else { // 1/3 chance to strike full staff
           // Full staff lightning (but with reduced LEDs to save power)
           for (int i = 0; i < numLeds; i += 3) { // Only light every 3rd LED
-            ledArray[i] = lightningColor;
+            if (i >= 0 && i < numLeds) { // Bounds check
+              ledArray[i] = lightningColor;
+            }
           }
         }
       } else {
         // Full lightning for non-folded arrangement (with power saving)
         for (int i = 0; i < numLeds; i += 3) { // Only light every 3rd LED
-          ledArray[i] = lightningColor;
+          if (i >= 0 && i < numLeds) { // Bounds check
+            ledArray[i] = lightningColor;
+          }
         }
       }
       
@@ -146,7 +186,7 @@ private:
       // Decay the lightning effect with afterglow (reduced brightness)
       uint8_t fade = random8(1, 3); // Reduced from 2-7 to 1-3
       for (int i = 0; i < numLeds; i++) {
-        if (random8() < 80) { // Reduced from 120 to 80 (31% chance)
+        if (random8() < 80 && i >= 0 && i < numLeds) { // Reduced from 120 to 80 (31% chance) + bounds check
           ledArray[i] = CRGB(fade, fade, fade + random8(1, 2)); // Blue tint
         }
       }

@@ -18,6 +18,16 @@ private:
   
 public:
   FireEffect(CRGB* leds, int count, bool reverse = false, bool folded = true) {
+    // Validate inputs
+    if (!leds || count <= 0) {
+      // Handle invalid input
+      ledArray = nullptr;
+      numLeds = 0;
+      heat = nullptr;
+      Serial.println("ERROR: FireEffect created with invalid parameters");
+      return;
+    }
+    
     ledArray = leds;
     numLeds = count;
     reversed = reverse;
@@ -27,11 +37,20 @@ public:
     
     // Allocate the heat array
     heat = new byte[numLeds];
-    memset(heat, 0, numLeds);
+    if (heat) {
+      // Initialize all elements to zero
+      memset(heat, 0, numLeds);
+    } else {
+      Serial.println("ERROR: FireEffect failed to allocate heat array");
+      numLeds = 0; // Mark as invalid
+    }
   }
   
   ~FireEffect() {
-    delete[] heat;
+    if (heat) {
+      delete[] heat;
+      heat = nullptr;  // Prevent double deletion
+    }
   }
   
   void setCooling(uint8_t cool) {
@@ -43,6 +62,11 @@ public:
   }
   
   void update() {
+    // Safety check - make sure we have valid memory
+    if (!ledArray || !heat || numLeds <= 0) {
+      return;
+    }
+    
     // For a folded strip, we need to treat the 'middle' LED indexes as the physical far end
     // and the 0 and (count-1) as the physical center/hilt
     uint8_t midPoint = numLeds / 2;
@@ -76,18 +100,24 @@ public:
       // Sparks can start near both ends (center of the physical staff)
       if (random8() < sparking) {
         int y = random8(7); // Near index 0 (center)
-        heat[y] = qadd8(heat[y], random8(160, 255));
+        if (y < numLeds) { // Bounds check
+          heat[y] = qadd8(heat[y], random8(160, 255));
+        }
       }
       
       if (random8() < sparking) {
         int y = numLeds - 1 - random8(7); // Near index numLeds-1 (center)
-        heat[y] = qadd8(heat[y], random8(160, 255));
+        if (y >= 0 && y < numLeds) { // Bounds check
+          heat[y] = qadd8(heat[y], random8(160, 255));
+        }
       }
     } else {
       // Standard sparking at the bottom for non-folded arrangement
       if (random8() < sparking) {
         int y = random8(7);
-        heat[y] = qadd8(heat[y], random8(160, 255));
+        if (y < numLeds) { // Bounds check
+          heat[y] = qadd8(heat[y], random8(160, 255));
+        }
       }
     }
   
@@ -102,7 +132,10 @@ public:
         pixelnumber = j;
       }
       
-      ledArray[pixelnumber] = color;
+      // Bounds check
+      if (pixelnumber >= 0 && pixelnumber < numLeds) {
+        ledArray[pixelnumber] = color;
+      }
     }
   }
 };

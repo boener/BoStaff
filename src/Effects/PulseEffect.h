@@ -18,6 +18,15 @@ private:
   
 public:
   PulseEffect(CRGB* leds, int count, bool folded = true) {
+    // Validate inputs
+    if (!leds || count <= 0) {
+      // Handle invalid input
+      ledArray = nullptr;
+      numLeds = 0;
+      Serial.println("ERROR: PulseEffect created with invalid parameters");
+      return;
+    }
+    
     ledArray = leds;
     numLeds = count;
     baseHue = 0;
@@ -31,16 +40,26 @@ public:
   }
   
   void setWaveCount(uint8_t count) {
-    waveCount = count;
+    if (count > 0 && count <= 5) { // Reasonable bounds
+      waveCount = count;
+    }
   }
   
   void update() {
+    // Safety check - make sure we have valid memory
+    if (!ledArray || numLeds <= 0) {
+      return;
+    }
+    
     // For folded strips, both ends (LED 0 and LED count-1) are at the center
     // and the middle of the strip (LED count/2) is at the far end
     
     uint8_t midPoint = numLeds / 2; // Physical midpoint of the strip
     
     for (int i = 0; i < numLeds; i++) {
+      // Bounds check
+      if (i < 0 || i >= numLeds) continue;
+      
       // Calculate distance from center based on folded arrangement
       uint8_t distanceFromCenter;
       
@@ -60,15 +79,15 @@ public:
       
       // Create multiple sine waves with different frequencies
       // Creates a pulse that travels outward from the center
-      uint8_t brightness = 0;
+      uint16_t brightness = 0; // Use uint16_t to prevent overflow during addition
       
       for (uint8_t w = 1; w <= waveCount; w++) {
-        uint8_t b = beatsin8(10 * w, 0, 255 / w, 0, distanceFromCenter * 8);
+        uint8_t b = beatsin8(10 * w, 0, 255 / max(w, 1), 0, distanceFromCenter * 8);
         brightness += b;
       }
       
       // Constrain brightness to avoid overflow
-      brightness = qsub8(brightness, brightness > 255 ? brightness - 255 : 0);
+      brightness = min(brightness, 255);
       
       // Calculate hue variation based on distance from center
       uint8_t hueVar = baseHue + distanceFromCenter;

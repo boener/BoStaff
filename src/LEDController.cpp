@@ -20,6 +20,7 @@ void LEDController::begin(Config* cfg) {
   // Initialize effect variables
   effectStep = 0;
   effectSpeed = 30; // Default speed
+  impactEffectActive = false;
   
   Serial.println("LED Controller initialized");
   Serial.print("Brightness set to: "); Serial.println(normalBrightness);
@@ -36,6 +37,10 @@ void LEDController::update() {
       impactEffectActive = false;
       FastLED.setBrightness(normalBrightness);
       Serial.println("Impact effect ended, restored normal brightness");
+      
+      // Clear both strips after impact to prevent any artifacts
+      fill_solid(leds1, NUM_LEDS_PER_STRIP, CRGB::Black);
+      fill_solid(leds2, NUM_LEDS_PER_STRIP, CRGB::Black);
     } else {
       // Show impact effect (bright white flash with reduced brightness)
       FastLED.setBrightness(config->impactBrightness); // Use the impact-specific brightness
@@ -54,7 +59,7 @@ void LEDController::update() {
     updateSolidEffect();
   }
   
-  // FIXED: Update the LEDs for ALL modes, not just SOLID mode
+  // Update the LEDs for ALL modes, not just SOLID mode
   FastLED.show();
   
   // Increment effect step for animations
@@ -65,6 +70,11 @@ void LEDController::setMode(uint8_t mode) {
   if (mode < config->numModes) {
     currentMode = mode;
     effectStep = 0; // Reset effect animation
+    
+    // Clear LEDs when changing mode
+    fill_solid(leds1, NUM_LEDS_PER_STRIP, CRGB::Black);
+    fill_solid(leds2, NUM_LEDS_PER_STRIP, CRGB::Black);
+    FastLED.show();
     
     Serial.print("Mode changed to: ");
     Serial.println(currentMode);
@@ -81,6 +91,25 @@ void LEDController::setBrightness(uint8_t brightness) {
   normalBrightness = brightness;
   FastLED.setBrightness(brightness);
   config->brightness = brightness;
+}
+
+// Force a complete refresh of the LED strips
+void LEDController::forceRefresh() {
+  // Clear both strips
+  fill_solid(leds1, NUM_LEDS_PER_STRIP, CRGB::Black);
+  fill_solid(leds2, NUM_LEDS_PER_STRIP, CRGB::Black);
+  FastLED.show();
+  
+  // Reset effect step counter
+  effectStep = 0;
+  
+  // Ensure impactEffectActive is reset
+  impactEffectActive = false;
+  
+  // Set brightness to correct value
+  FastLED.setBrightness(normalBrightness);
+  
+  Serial.println("LED strips forcefully refreshed");
 }
 
 // Effect implementation (note: most effects are now implemented in separate classes)

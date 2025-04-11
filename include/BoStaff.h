@@ -62,6 +62,7 @@ public:
   void setMode(uint8_t mode);
   void triggerImpactEffect();
   void setBrightness(uint8_t brightness);
+  void forceRefresh(); // New method to force a complete refresh of LED strips
   
   // Getters for LED arrays
   CRGB* getLeds1() { return leds1; }

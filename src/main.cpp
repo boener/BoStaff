@@ -40,6 +40,49 @@ bool calibrationMode = false;
 unsigned long buttonPressStart = 0;
 bool buttonWasPressed = false;
 
+// Function to initialize all effect objects
+void initializeAllEffects() {
+  // Clear any existing effects first
+  if (fireEffect1) delete fireEffect1;
+  if (fireEffect2) delete fireEffect2;
+  if (pulseEffect1) delete pulseEffect1;
+  if (pulseEffect2) delete pulseEffect2;
+  if (rainbowEffect1) delete rainbowEffect1;
+  if (rainbowEffect2) delete rainbowEffect2;
+  if (strobeEffect1) delete strobeEffect1;
+  if (strobeEffect2) delete strobeEffect2;
+  
+  // Set all pointers to null (important to prevent dangling pointers)
+  fireEffect1 = nullptr;
+  fireEffect2 = nullptr;
+  pulseEffect1 = nullptr;
+  pulseEffect2 = nullptr;
+  rainbowEffect1 = nullptr;
+  rainbowEffect2 = nullptr;
+  strobeEffect1 = nullptr;
+  strobeEffect2 = nullptr;
+  
+  // Now create all effects fresh
+  fireEffect1 = new FireEffect(ledController.getLeds1(), NUM_LEDS_PER_STRIP, false, true); // not reversed, folded
+  fireEffect2 = new FireEffect(ledController.getLeds2(), NUM_LEDS_PER_STRIP, true, true); // reversed, folded
+  
+  pulseEffect1 = new PulseEffect(ledController.getLeds1(), NUM_LEDS_PER_STRIP, true); // folded
+  pulseEffect2 = new PulseEffect(ledController.getLeds2(), NUM_LEDS_PER_STRIP, true); // folded
+  
+  rainbowEffect1 = new RainbowEffect(ledController.getLeds1(), NUM_LEDS_PER_STRIP, true); // folded
+  rainbowEffect2 = new RainbowEffect(ledController.getLeds2(), NUM_LEDS_PER_STRIP, true); // folded
+  
+  strobeEffect1 = new StrobeEffect(ledController.getLeds1(), NUM_LEDS_PER_STRIP, true); // folded
+  strobeEffect2 = new StrobeEffect(ledController.getLeds2(), NUM_LEDS_PER_STRIP, true); // folded
+  
+  // Clear the LED arrays to ensure clean start
+  fill_solid(ledController.getLeds1(), NUM_LEDS_PER_STRIP, CRGB::Black);
+  fill_solid(ledController.getLeds2(), NUM_LEDS_PER_STRIP, CRGB::Black);
+  FastLED.show();
+  
+  Serial.println(F("All LED effects initialized"));
+}
+
 void setup() {
   // Initialize serial communication
   Serial.begin(SERIAL_BAUD);
@@ -81,17 +124,8 @@ void setup() {
   Serial.println(F("Initializing LED effects for folded strip arrangement"));
   Serial.println(F("(LEDs 0 and 199 at center/hilt, LEDs 99 and 100 at far end)"));
   
-  // First strip - initialize with folded=true
-  fireEffect1 = new FireEffect(ledController.getLeds1(), NUM_LEDS_PER_STRIP, false, true); // not reversed, folded
-  pulseEffect1 = new PulseEffect(ledController.getLeds1(), NUM_LEDS_PER_STRIP, true); // folded
-  rainbowEffect1 = new RainbowEffect(ledController.getLeds1(), NUM_LEDS_PER_STRIP, true); // folded
-  strobeEffect1 = new StrobeEffect(ledController.getLeds1(), NUM_LEDS_PER_STRIP, true); // folded
-  
-  // Second strip - initialize with folded=true
-  fireEffect2 = new FireEffect(ledController.getLeds2(), NUM_LEDS_PER_STRIP, true, true); // reversed, folded
-  pulseEffect2 = new PulseEffect(ledController.getLeds2(), NUM_LEDS_PER_STRIP, true); // folded
-  rainbowEffect2 = new RainbowEffect(ledController.getLeds2(), NUM_LEDS_PER_STRIP, true); // folded
-  strobeEffect2 = new StrobeEffect(ledController.getLeds2(), NUM_LEDS_PER_STRIP, true); // folded
+  // Initialize all effects
+  initializeAllEffects();
   
   // Set the initial mode
   ledController.setMode(config.currentMode);
@@ -119,6 +153,15 @@ void loop() {
       // Long press detected, enter calibration mode
       calibrationMode = true;
       
+      // Disable all interrupts to ensure clean LED operations
+      noInterrupts();
+      
+      // Clear both strips completely before visual feedback
+      fill_solid(ledController.getLeds1(), NUM_LEDS_PER_STRIP, CRGB::Black);
+      fill_solid(ledController.getLeds2(), NUM_LEDS_PER_STRIP, CRGB::Black);
+      FastLED.show();
+      delay(100);
+      
       // Visual feedback - flash LEDs blue to indicate calibration mode
       for (int i = 0; i < NUM_LEDS_PER_STRIP; i++) {
         ledController.getLeds1()[i] = CRGB::Blue;
@@ -126,9 +169,15 @@ void loop() {
       }
       FastLED.show();
       delay(500);
-      FastLED.clear();
+      
+      // Clear both strips completely 
+      fill_solid(ledController.getLeds1(), NUM_LEDS_PER_STRIP, CRGB::Black);
+      fill_solid(ledController.getLeds2(), NUM_LEDS_PER_STRIP, CRGB::Black);
       FastLED.show();
       delay(500);
+      
+      // Re-enable interrupts
+      interrupts();
       
       Serial.println(F("\n*** ENTERING CALIBRATION MODE ***"));
       
@@ -141,6 +190,9 @@ void loop() {
       Serial.print(F("New impact threshold saved: "));
       Serial.println(config.impactThreshold);
       
+      // Disable interrupts again
+      noInterrupts();
+      
       // Visual feedback - flash LEDs green to indicate calibration complete
       for (int i = 0; i < NUM_LEDS_PER_STRIP; i++) {
         ledController.getLeds1()[i] = CRGB::Green;
@@ -149,11 +201,28 @@ void loop() {
       FastLED.show();
       delay(1000);
       
+      // Clear both strips completely before restoring normal operation
+      fill_solid(ledController.getLeds1(), NUM_LEDS_PER_STRIP, CRGB::Black);  
+      fill_solid(ledController.getLeds2(), NUM_LEDS_PER_STRIP, CRGB::Black);
+      FastLED.show();
+      
+      // Re-enable interrupts
+      interrupts();
+      
+      // Completely reinitialize all effect objects to ensure clean state
+      initializeAllEffects();
+      
       // Reset calibration mode
       calibrationMode = false;
       
+      // Make sure brightness is restored
+      FastLED.setBrightness(config.brightness);
+      
       // Restore current LED effect
       ledController.setMode(config.currentMode);
+      
+      // Force a clean update of the strips
+      ledController.forceRefresh();
     }
   } else {
     buttonWasPressed = false;  // Button released
@@ -190,23 +259,31 @@ void loop() {
   // Update LED effects based on current mode
   switch (config.currentMode) {
     case EFFECT_FIRE:
-      fireEffect1->update();
-      fireEffect2->update();
+      if (fireEffect1 && fireEffect2) {
+        fireEffect1->update();
+        fireEffect2->update();
+      }
       break;
       
     case EFFECT_PULSE:
-      pulseEffect1->update();
-      pulseEffect2->update();
+      if (pulseEffect1 && pulseEffect2) {
+        pulseEffect1->update();
+        pulseEffect2->update();
+      }
       break;
       
     case EFFECT_RAINBOW:
-      rainbowEffect1->update();
-      rainbowEffect2->update();
+      if (rainbowEffect1 && rainbowEffect2) {
+        rainbowEffect1->update();
+        rainbowEffect2->update();
+      }
       break;
       
     case EFFECT_STROBE:
-      strobeEffect1->update();
-      strobeEffect2->update();
+      if (strobeEffect1 && strobeEffect2) {
+        strobeEffect1->update();
+        strobeEffect2->update();
+      }
       break;
       
     case EFFECT_SOLID:
