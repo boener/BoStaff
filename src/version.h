@@ -14,8 +14,8 @@
 
 // Hardware configuration
 #define HW_VERSION "1.1"
-#define DEFAULT_BRIGHTNESS 75   // Reduced from 150 to 75 (50%)
-#define DEFAULT_IMPACT_BRIGHTNESS 100 // New setting for impact flash (lower than previous 255)
+#define DEFAULT_BRIGHTNESS 25   // Reduced from 150 to 25 (10% of max 255)
+#define DEFAULT_IMPACT_BRIGHTNESS 100 // Impact flash brightness (40% of max 255)
 
 // LED configuration - UPDATED PIN ASSIGNMENTS
 #define LED_PIN_1 D3  // GPIO0 - First LED strip (was D1/GPIO5)

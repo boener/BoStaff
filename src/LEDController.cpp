@@ -8,7 +8,7 @@ void LEDController::begin(Config* cfg) {
   FastLED.addLeds<WS2812B, LED_PIN_1, GRB>(leds1, NUM_LEDS_PER_STRIP).setCorrection(TypicalLEDStrip);
   FastLED.addLeds<WS2812B, LED_PIN_2, GRB>(leds2, NUM_LEDS_PER_STRIP).setCorrection(TypicalLEDStrip);
   
-  // Set initial brightness (reduced to 75)
+  // Set initial brightness (reduced to 25, approximately 10% of max 255)
   normalBrightness = config->brightness;
   FastLED.setBrightness(normalBrightness);
   
