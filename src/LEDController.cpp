@@ -41,6 +41,9 @@ void LEDController::update() {
       // Clear both strips after impact to prevent any artifacts
       fill_solid(leds1, NUM_LEDS_PER_STRIP, CRGB::Black);
       fill_solid(leds2, NUM_LEDS_PER_STRIP, CRGB::Black);
+      
+      // Force a show here to ensure black frame is displayed before next effect starts
+      FastLED.show();
     } else {
       // Show impact effect (bright white flash with reduced brightness)
       FastLED.setBrightness(config->impactBrightness); // Use the impact-specific brightness
@@ -51,23 +54,26 @@ void LEDController::update() {
     }
   }
   
-  // External effect objects now handle the main effects
-  // This class only handles the basic solid effect and impact flash
-  
-  // For compatibility with old code, we'll keep the solid color effect here
-  if (currentMode == EFFECT_SOLID) {
-    updateSolidEffect();
+  // Only update LED buffer if no impact effect is active
+  if (!impactEffectActive) {
+    // For compatibility with old code, we'll keep the solid color effect here
+    if (currentMode == EFFECT_SOLID) {
+      updateSolidEffect();
+    }
+    
+    // Update the LEDs for ALL modes, not just SOLID mode
+    FastLED.show();
+    
+    // Increment effect step for animations
+    effectStep++;
   }
-  
-  // Update the LEDs for ALL modes, not just SOLID mode
-  FastLED.show();
-  
-  // Increment effect step for animations
-  effectStep++;
 }
 
 void LEDController::setMode(uint8_t mode) {
   if (mode < config->numModes) {
+    // Disable interrupts during mode change to prevent race conditions
+    noInterrupts();
+    
     currentMode = mode;
     effectStep = 0; // Reset effect animation
     
@@ -76,25 +82,43 @@ void LEDController::setMode(uint8_t mode) {
     fill_solid(leds2, NUM_LEDS_PER_STRIP, CRGB::Black);
     FastLED.show();
     
+    // Re-enable interrupts
+    interrupts();
+    
     Serial.print("Mode changed to: ");
     Serial.println(currentMode);
   }
 }
 
 void LEDController::triggerImpactEffect() {
+  // Disable interrupts during impact effect activation to prevent race conditions
+  noInterrupts();
+  
   impactEffectActive = true;
   impactEffectStart = millis();
+  
+  // Re-enable interrupts
+  interrupts();
+  
   Serial.println("Impact effect triggered");
 }
 
 void LEDController::setBrightness(uint8_t brightness) {
   normalBrightness = brightness;
-  FastLED.setBrightness(brightness);
+  
+  // Only set FastLED brightness directly if no impact effect is active
+  if (!impactEffectActive) {
+    FastLED.setBrightness(brightness);
+  }
+  
   config->brightness = brightness;
 }
 
 // Force a complete refresh of the LED strips
 void LEDController::forceRefresh() {
+  // Disable interrupts during refresh to prevent race conditions
+  noInterrupts();
+  
   // Clear both strips
   fill_solid(leds1, NUM_LEDS_PER_STRIP, CRGB::Black);
   fill_solid(leds2, NUM_LEDS_PER_STRIP, CRGB::Black);
@@ -108,6 +132,9 @@ void LEDController::forceRefresh() {
   
   // Set brightness to correct value
   FastLED.setBrightness(normalBrightness);
+  
+  // Re-enable interrupts
+  interrupts();
   
   Serial.println("LED strips forcefully refreshed");
 }
