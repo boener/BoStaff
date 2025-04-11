@@ -19,6 +19,10 @@
 #define BATTERY_MIN_VOLTAGE 3.3  // Minimum safe battery voltage
 #define BATTERY_MAX_VOLTAGE 4.2  // Maximum battery voltage when fully charged
 
+// Power management settings
+#define POWER_SAVING_MODE 1     // Enable power saving features (0=disabled, 1=enabled)
+#define SLEEP_AFTER_MINS 30     // Minutes of inactivity before entering sleep mode
+
 // Power management functions
 class PowerManager {
 private:
