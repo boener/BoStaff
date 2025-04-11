@@ -97,6 +97,9 @@ private:
   unsigned long lastImpactTime;
   unsigned long impactCooldown;
   
+  // Helper method for calibration
+  void waitForButtonPress();
+  
 public:
   AccelerometerHandler() : mpuInitialized(false), impactDetectedFlag(false), 
                            lastImpactTime(0), impactCooldown(500) {}
