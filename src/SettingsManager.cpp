@@ -47,7 +47,7 @@ bool SettingsManager::loadSettings(Config* cfg) {
     }
     
     if (cfg->impactBrightness == 0) {
-      cfg->impactBrightness = 100; // Use hardcoded default if invalid
+      cfg->impactBrightness = 25; // Reduced from 100 to 25 (10% of max 255)
     }
     
     Serial.println("Settings loaded from EEPROM");
