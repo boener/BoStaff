@@ -19,6 +19,15 @@ private:
   
 public:
   RainbowEffect(CRGB* leds, int count, bool folded = true) {
+    // Validate inputs
+    if (!leds || count <= 0) {
+      // Handle invalid input
+      ledArray = nullptr;
+      numLeds = 0;
+      Serial.println("ERROR: RainbowEffect created with invalid parameters");
+      return;
+    }
+    
     ledArray = leds;
     numLeds = count;
     mode = 0;
@@ -46,6 +55,11 @@ public:
   }
   
   void update() {
+    // Safety check - make sure we have valid memory
+    if (!ledArray || numLeds <= 0) {
+      return;
+    }
+    
     switch (mode) {
       case 0: // Smooth cycle - entire strip changes color together
         updateSmoothCycle();
@@ -71,6 +85,9 @@ private:
   }
   
   void updateMovingRainbow() {
+    // Safety check again
+    if (!ledArray || numLeds <= 0) return;
+    
     uint8_t midPoint = numLeds / 2;
     
     if (isFolded) {
@@ -84,7 +101,9 @@ private:
       for (int i = 0; i < midPoint; i++) {
         uint8_t pos = i;
         uint8_t hueVal = hue + map(pos, 0, midPoint - 1, 0, hueSpread);
-        ledArray[i] = CHSV(hueVal, saturation, 255);
+        if (i >= 0 && i < numLeds) { // Bounds check
+          ledArray[i] = CHSV(hueVal, saturation, 255);
+        }
       }
       
       // Second half - from far end back to center
@@ -92,21 +111,30 @@ private:
       for (int i = midPoint; i < numLeds; i++) {
         uint8_t pos = i - midPoint;
         uint8_t hueVal = hue + map(pos, 0, midPoint - 1, hueSpread, 255);
-        ledArray[i] = CHSV(hueVal, saturation, 255);
+        if (i >= 0 && i < numLeds) { // Bounds check
+          ledArray[i] = CHSV(hueVal, saturation, 255);
+        }
       }
     } else {
       // Standard moving rainbow for non-folded arrangement
       uint8_t deltaHue = 255 / numLeds; // Calculate hue change per LED
       for (int i = 0; i < numLeds; i++) {
-        ledArray[i] = CHSV(hue + (i * deltaHue), saturation, 255);
+        if (i >= 0 && i < numLeds) { // Bounds check
+          ledArray[i] = CHSV(hue + (i * deltaHue), saturation, 255);
+        }
       }
     }
   }
   
   void updateRainbowTwinkle() {
+    // Safety check again
+    if (!ledArray || numLeds <= 0) return;
+    
     // Fade all LEDs slightly each frame
     for (int i = 0; i < numLeds; i++) {
-      ledArray[i].fadeToBlackBy(10);
+      if (i >= 0 && i < numLeds) { // Bounds check
+        ledArray[i].fadeToBlackBy(10);
+      }
     }
     
     // Randomly light new LEDs
@@ -129,7 +157,9 @@ private:
           positionHue = 0;
         }
         
-        ledArray[i] = CHSV(hue + positionHue + random8(64), saturation, 255);
+        if (i >= 0 && i < numLeds) { // Bounds check
+          ledArray[i] = CHSV(hue + positionHue + random8(64), saturation, 255);
+        }
       }
     }
   }
