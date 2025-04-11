@@ -126,7 +126,9 @@ void loop() {
       }
       FastLED.show();
       delay(500);
-      FastLED.clear();
+      // Clear both strips completely
+      fill_solid(ledController.getLeds1(), NUM_LEDS_PER_STRIP, CRGB::Black);
+      fill_solid(ledController.getLeds2(), NUM_LEDS_PER_STRIP, CRGB::Black);
       FastLED.show();
       delay(500);
       
@@ -149,8 +151,44 @@ void loop() {
       FastLED.show();
       delay(1000);
       
+      // Clear both strips completely before restoring normal operation
+      fill_solid(ledController.getLeds1(), NUM_LEDS_PER_STRIP, CRGB::Black);  
+      fill_solid(ledController.getLeds2(), NUM_LEDS_PER_STRIP, CRGB::Black);
+      FastLED.show();
+      
       // Reset calibration mode
       calibrationMode = false;
+      
+      // Re-initialize both effects to ensure they start fresh
+      switch (config.currentMode) {
+        case EFFECT_FIRE:
+          delete fireEffect1;
+          delete fireEffect2;
+          fireEffect1 = new FireEffect(ledController.getLeds1(), NUM_LEDS_PER_STRIP, false, true);
+          fireEffect2 = new FireEffect(ledController.getLeds2(), NUM_LEDS_PER_STRIP, true, true);
+          break;
+          
+        case EFFECT_PULSE:
+          delete pulseEffect1;
+          delete pulseEffect2;
+          pulseEffect1 = new PulseEffect(ledController.getLeds1(), NUM_LEDS_PER_STRIP, true);
+          pulseEffect2 = new PulseEffect(ledController.getLeds2(), NUM_LEDS_PER_STRIP, true);
+          break;
+          
+        case EFFECT_RAINBOW:
+          delete rainbowEffect1;
+          delete rainbowEffect2;
+          rainbowEffect1 = new RainbowEffect(ledController.getLeds1(), NUM_LEDS_PER_STRIP, true);
+          rainbowEffect2 = new RainbowEffect(ledController.getLeds2(), NUM_LEDS_PER_STRIP, true);
+          break;
+          
+        case EFFECT_STROBE:
+          delete strobeEffect1;
+          delete strobeEffect2;
+          strobeEffect1 = new StrobeEffect(ledController.getLeds1(), NUM_LEDS_PER_STRIP, true);
+          strobeEffect2 = new StrobeEffect(ledController.getLeds2(), NUM_LEDS_PER_STRIP, true);
+          break;
+      }
       
       // Restore current LED effect
       ledController.setMode(config.currentMode);
