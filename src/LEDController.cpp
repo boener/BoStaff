@@ -47,6 +47,8 @@ void LEDController::update() {
     } else {
       // Show impact effect (bright white flash with reduced brightness)
       FastLED.setBrightness(config->impactBrightness); // Use the impact-specific brightness
+      Serial.print("*** Impact Flash Brightness Set To: "); Serial.println(config->impactBrightness);
+      
       fill_solid(leds1, NUM_LEDS_PER_STRIP, CRGB::White);
       fill_solid(leds2, NUM_LEDS_PER_STRIP, CRGB::White);
       FastLED.show();
@@ -101,6 +103,8 @@ void LEDController::triggerImpactEffect() {
   interrupts();
   
   Serial.println("Impact effect triggered");
+  Serial.print("Normal brightness: "); Serial.println(normalBrightness);
+  Serial.print("Impact brightness: "); Serial.println(config->impactBrightness); 
 }
 
 void LEDController::setBrightness(uint8_t brightness) {

@@ -43,7 +43,7 @@ bool SettingsManager::loadSettings(Config* cfg) {
     }
     
     if (cfg->brightness == 0) {
-      cfg->brightness = 75; // Use hardcoded default if invalid
+      cfg->brightness = 25; // Use updated default if invalid (reduced from 75 to 25)
     }
     
     if (cfg->impactBrightness == 0) {
