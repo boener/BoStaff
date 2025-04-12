@@ -71,9 +71,11 @@ void AccelerometerHandler::update() {
   // Use the configured threshold instead of hard-coded value
   uint16_t currentThreshold = config->impactThreshold;
   
-  // Print accelerometer readings every second (for debugging)
+  // CHANGED: Comment out or reduce frequency of debug printing
+  // Only print every 5 seconds instead of every second to reduce potential I2C conflicts
+  /*
   static unsigned long lastPrint = 0;
-  if (millis() - lastPrint > 1000) {
+  if (millis() - lastPrint > 5000) {
     Serial.print("Accel: "); Serial.print(accelRaw);
     Serial.print(" (X:"); Serial.print(a.acceleration.x);
     Serial.print(" Y:"); Serial.print(a.acceleration.y);
@@ -81,6 +83,7 @@ void AccelerometerHandler::update() {
     Serial.print(") Threshold: "); Serial.println(currentThreshold);
     lastPrint = millis();
   }
+  */
   
   // Check for impact (with cooldown to prevent multiple triggers)
   if (accelRaw > currentThreshold && 

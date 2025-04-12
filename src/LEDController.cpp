@@ -1,5 +1,9 @@
 #include "BoStaff.h"
 
+// Add a debugging variable to track FastLED show calls
+unsigned long lastShowTime = 0;
+unsigned long showCallCount = 0;
+
 void LEDController::begin(Config* cfg) {
   config = cfg;
   currentMode = config->currentMode;
@@ -16,6 +20,7 @@ void LEDController::begin(Config* cfg) {
   fill_solid(leds1, NUM_LEDS_PER_STRIP, CRGB::Black);
   fill_solid(leds2, NUM_LEDS_PER_STRIP, CRGB::Black);
   FastLED.show();
+  lastShowTime = millis(); // Initialize show time tracking
   
   // Initialize effect variables
   effectStep = 0;
@@ -44,6 +49,19 @@ void LEDController::update() {
       
       // Force a show here to ensure black frame is displayed before next effect starts
       FastLED.show();
+      
+      // Track show call timing
+      unsigned long now = millis();
+      unsigned long timeSinceLastShow = now - lastShowTime;
+      lastShowTime = now;
+      showCallCount++;
+      
+      if (timeSinceLastShow < 1100 && timeSinceLastShow > 900) {
+        Serial.print("TIMING: FastLED.show() called at ~1s interval: ");
+        Serial.print(timeSinceLastShow);
+        Serial.print("ms, count: ");
+        Serial.println(showCallCount);
+      }
     } else {
       // Show impact effect (dim white flash)
       FastLED.setBrightness(config->impactBrightness); // Use the impact-specific brightness
@@ -56,6 +74,20 @@ void LEDController::update() {
       fill_solid(leds2, NUM_LEDS_PER_STRIP, dimWhite);
       
       FastLED.show();
+      
+      // Track show call timing
+      unsigned long now = millis();
+      unsigned long timeSinceLastShow = now - lastShowTime;
+      lastShowTime = now;
+      showCallCount++;
+      
+      if (timeSinceLastShow < 1100 && timeSinceLastShow > 900) {
+        Serial.print("TIMING: FastLED.show() called at ~1s interval: ");
+        Serial.print(timeSinceLastShow);
+        Serial.print("ms, count: ");
+        Serial.println(showCallCount);
+      }
+      
       return; // Don't run other effects during impact
     }
   }
@@ -69,6 +101,19 @@ void LEDController::update() {
     
     // Update the LEDs for ALL modes, not just SOLID mode
     FastLED.show();
+    
+    // Track show call timing
+    unsigned long now = millis();
+    unsigned long timeSinceLastShow = now - lastShowTime;
+    lastShowTime = now;
+    showCallCount++;
+    
+    if (timeSinceLastShow < 1100 && timeSinceLastShow > 900) {
+      Serial.print("TIMING: FastLED.show() called at ~1s interval: ");
+      Serial.print(timeSinceLastShow);
+      Serial.print("ms, count: ");
+      Serial.println(showCallCount);
+    }
     
     // Increment effect step for animations
     effectStep++;
