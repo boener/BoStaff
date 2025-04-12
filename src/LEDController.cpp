@@ -45,12 +45,16 @@ void LEDController::update() {
       // Force a show here to ensure black frame is displayed before next effect starts
       FastLED.show();
     } else {
-      // Show impact effect (bright white flash with reduced brightness)
+      // Show impact effect (dim white flash)
       FastLED.setBrightness(config->impactBrightness); // Use the impact-specific brightness
       Serial.print("*** Impact Flash Brightness Set To: "); Serial.println(config->impactBrightness);
       
-      fill_solid(leds1, NUM_LEDS_PER_STRIP, CRGB::White);
-      fill_solid(leds2, NUM_LEDS_PER_STRIP, CRGB::White);
+      // Use dimmer white (25, 25, 25) instead of full white (255, 255, 255)
+      // This ensures the color itself is also dimmer, not just the overall brightness
+      CRGB dimWhite = CRGB(25, 25, 25);
+      fill_solid(leds1, NUM_LEDS_PER_STRIP, dimWhite);
+      fill_solid(leds2, NUM_LEDS_PER_STRIP, dimWhite);
+      
       FastLED.show();
       return; // Don't run other effects during impact
     }
