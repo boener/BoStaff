@@ -31,7 +31,7 @@ private:
   float batteryVoltage;
   uint8_t originalBrightness;
   unsigned long lastBatteryCheck;  // Added to control battery check interval
-  const unsigned long BATTERY_CHECK_INTERVAL = 5000;  // Check battery every 5 seconds instead of 1
+  const unsigned long BATTERY_CHECK_INTERVAL = 10000;  // Increased to check battery every 10 seconds
   
 public:
   PowerManager() : lastActiveTime(0), lowBatteryMode(false), batteryVoltage(0.0), 
@@ -56,10 +56,12 @@ public:
   }
   
   void update() {
-    // Modified: Check battery voltage at controlled intervals
+    // Check battery voltage at controlled intervals (now less frequent)
     if (millis() - lastBatteryCheck >= BATTERY_CHECK_INTERVAL) {
       batteryVoltage = readBatteryVoltage();
       lastBatteryCheck = millis();
+      
+      // Don't print battery voltage to serial every time we check
       
       // Check for low battery condition
       if (batteryVoltage < BATTERY_MIN_VOLTAGE && !lowBatteryMode) {

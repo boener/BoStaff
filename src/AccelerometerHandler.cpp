@@ -112,11 +112,9 @@ void AccelerometerHandler::update() {
 }
 
 bool AccelerometerHandler::impactDetected() {
-  // Return and clear the impact flag
+  // Return and clear the impact flag without Serial printing
   bool result = impactDetectedFlag;
-  if (result) {
-    Serial.println("Impact flag checked and returned TRUE");
-  }
+  // Removed the Serial.println that was here causing the issue
   impactDetectedFlag = false;
   return result;
 }

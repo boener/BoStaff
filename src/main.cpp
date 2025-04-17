@@ -40,10 +40,6 @@ bool calibrationMode = false;
 unsigned long buttonPressStart = 0;
 bool buttonWasPressed = false;
 
-// Debug variables
-unsigned long lastLoopTime = 0;
-unsigned long loopCount = 0;
-
 // I2C and LED timing control variables
 unsigned long lastAccelUpdate = 0;
 const unsigned long ACCEL_UPDATE_INTERVAL = 25; // Only read accelerometer every 25ms to reduce I2C traffic
@@ -180,27 +176,11 @@ void setup() {
   Serial.println(F("\nTo enter accelerometer calibration mode,"));
   Serial.println(F("hold the button for 5 seconds until all LEDs flash blue."));
   
-  // Initialize loop timing measurement
-  lastLoopTime = millis();
+  // Initialize accelerometer update timing
   lastAccelUpdate = millis();
 }
 
 void loop() {
-  // Debug timing - track if our main loop is taking about 1 second (which would explain flashing)
-  unsigned long currentMillis = millis();
-  unsigned long loopTime = currentMillis - lastLoopTime;
-  loopCount++;
-  
-  // Only log if loop time is around 1 second
-  if (loopTime > 900 && loopTime < 1100) {
-    Serial.print("MAIN LOOP: ~1s loop time detected: ");
-    Serial.print(loopTime);
-    Serial.print("ms, loop count: ");
-    Serial.println(loopCount);
-  }
-  
-  lastLoopTime = currentMillis;
-  
   // Check for calibration mode trigger (long button press)
   if (digitalRead(BTN_PIN) == LOW) {  // Button pressed (active LOW)
     if (!buttonWasPressed) {
@@ -304,7 +284,7 @@ void loop() {
     powerManager.resetActivityTimer();
   }
   
-  // MODIFIED: Only read accelerometer at a controlled rate to avoid I2C timing conflicts
+  // Only read accelerometer at a controlled rate to avoid I2C timing conflicts
   if (millis() - lastAccelUpdate >= ACCEL_UPDATE_INTERVAL) {
     // Read accelerometer and detect impacts
     accelHandler.update();
