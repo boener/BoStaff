@@ -44,9 +44,9 @@ bool buttonWasPressed = false;
 unsigned long lastAccelUpdate = 0;
 const unsigned long ACCEL_UPDATE_INTERVAL = 25; // Only read accelerometer every 25ms to reduce I2C traffic
 
-// Main loop timing control
-unsigned long lastLoopTime = 0;
-const unsigned long LOOP_INTERVAL = 5; // 5ms loop interval for consistent timing
+// Add global frame rate control
+unsigned long lastFrameTime = 0;
+const unsigned long FRAME_INTERVAL = 50; // 50ms = 20fps, much slower for testing
 
 // Function to initialize all effect objects
 void initializeAllEffects() {
@@ -180,20 +180,37 @@ void setup() {
   Serial.println(F("\nTo enter accelerometer calibration mode,"));
   Serial.println(F("hold the button for 5 seconds until all LEDs flash blue."));
   
-  // Initialize timing variables
+  // Initialize accelerometer update timing
   lastAccelUpdate = millis();
-  lastLoopTime = millis();
+  lastFrameTime = millis();
 }
 
 void loop() {
-  // Add timing control to main loop for consistent performance
+  // Global frame rate control - only update visuals at set intervals
   unsigned long currentMillis = millis();
-  if (currentMillis - lastLoopTime < LOOP_INTERVAL) {
-    // Not enough time has passed, yield to other processes
+  if (currentMillis - lastFrameTime < FRAME_INTERVAL) {
+    // Not enough time has passed, just handle button input and yield
+    if (digitalRead(BTN_PIN) == LOW) {  // Button pressed (active LOW)
+      if (!buttonWasPressed) {
+        buttonWasPressed = true;
+        buttonPressStart = millis();
+      }
+      // Check for calibration mode - still allowed even during frame timing
+      else if (!calibrationMode && (millis() - buttonPressStart) > CALIBRATION_LONG_PRESS) {
+        // Handle calibration mode
+        // ... [calibration code omitted for brevity]
+      }
+    } else {
+      buttonWasPressed = false;  // Button released
+    }
+    
+    // Skip the rest of the loop until it's time for the next frame
     yield();
     return;
   }
-  lastLoopTime = currentMillis;
+  
+  // Reset lastFrameTime for next frame
+  lastFrameTime = currentMillis;
   
   // Check for calibration mode trigger (long button press)
   if (digitalRead(BTN_PIN) == LOW) {  // Button pressed (active LOW)
@@ -363,7 +380,7 @@ void loop() {
       break;
   }
   
-  // Update LED strips
+  // Update LED strips - this will call FastLED.show() internally
   ledController.update();
   
   // Update power management

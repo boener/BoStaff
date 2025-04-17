@@ -28,6 +28,9 @@ void LEDController::begin(Config* cfg) {
 }
 
 void LEDController::update() {
+  // Always synchronize both strips in an atomic operation
+  noInterrupts();
+  
   unsigned long currentMillis = millis();
   
   // Handle impact effect if active
@@ -40,9 +43,6 @@ void LEDController::update() {
       // Clear both strips after impact to prevent any artifacts
       fill_solid(leds1, NUM_LEDS_PER_STRIP, CRGB::Black);
       fill_solid(leds2, NUM_LEDS_PER_STRIP, CRGB::Black);
-      
-      // Force a show here to ensure black frame is displayed before next effect starts
-      FastLED.show();
     } else {
       // Show impact effect (dim white flash)
       FastLED.setBrightness(config->impactBrightness); // Use the impact-specific brightness
@@ -52,25 +52,22 @@ void LEDController::update() {
       CRGB dimWhite = CRGB(25, 25, 25);
       fill_solid(leds1, NUM_LEDS_PER_STRIP, dimWhite);
       fill_solid(leds2, NUM_LEDS_PER_STRIP, dimWhite);
-      
-      FastLED.show();
-      return; // Don't run other effects during impact
     }
-  }
-  
-  // Only update LED buffer if no impact effect is active
-  if (!impactEffectActive) {
+  } else {
     // For compatibility with old code, we'll keep the solid color effect here
     if (currentMode == EFFECT_SOLID) {
       updateSolidEffect();
     }
     
-    // Update the LEDs for ALL modes, not just SOLID mode
-    FastLED.show();
-    
-    // Increment effect step for animations
+    // Increment effect step for animations (only when not in impact effect)
     effectStep++;
   }
+  
+  // Always update the LEDs at the end, regardless of impact effect state
+  FastLED.show();
+  
+  // Re-enable interrupts
+  interrupts();
 }
 
 void LEDController::setMode(uint8_t mode) {
@@ -103,9 +100,6 @@ void LEDController::triggerImpactEffect() {
   
   // Re-enable interrupts
   interrupts();
-  
-  // Remove serial printing to avoid interruptions
-  // Serial.println("Impact effect triggered");
 }
 
 void LEDController::setBrightness(uint8_t brightness) {
