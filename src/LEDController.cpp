@@ -10,9 +10,9 @@ void LEDController::begin(Config* cfg) {
   currentMode = config->currentMode;
   
   // Setup the LED strips with the updated pin assignments and controller settings
-  // Use RGB color order instead of GRB to potentially fix timing issues
-  FastLED.addLeds<WS2812B, LED_PIN_1, RGB>(leds1, NUM_LEDS_PER_STRIP).setCorrection(TypicalLEDStrip);
-  FastLED.addLeds<WS2812B, LED_PIN_2, RGB>(leds2, NUM_LEDS_PER_STRIP).setCorrection(TypicalLEDStrip);
+  // Using GRB color order which is correct for most WS2812B strips
+  FastLED.addLeds<WS2812B, LED_PIN_1, GRB>(leds1, NUM_LEDS_PER_STRIP).setCorrection(TypicalLEDStrip);
+  FastLED.addLeds<WS2812B, LED_PIN_2, GRB>(leds2, NUM_LEDS_PER_STRIP).setCorrection(TypicalLEDStrip);
   
   // Set maximum power limit to avoid current issues (3A at 5V = 15W)
   FastLED.setMaxPowerInVoltsAndMilliamps(5, 3000);
@@ -34,7 +34,7 @@ void LEDController::begin(Config* cfg) {
   effectSpeed = 30; // Default speed
   impactEffectActive = false;
   
-  Serial.println("LED Controller initialized with RGB color order");
+  Serial.println("LED Controller initialized");
   Serial.print("Brightness set to: "); Serial.println(normalBrightness);
   Serial.print("Impact brightness set to: "); Serial.println(config->impactBrightness);
 }
