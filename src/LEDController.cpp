@@ -48,7 +48,9 @@ void LEDController::update() {
       fill_solid(leds2, NUM_LEDS_PER_STRIP, CRGB::Black);
       
       // Force a show here to ensure black frame is displayed before next effect starts
+      noInterrupts(); // Temporarily disable interrupts during LED update
       FastLED.show();
+      interrupts(); // Re-enable interrupts
       
       // Track show call timing
       unsigned long now = millis();
@@ -73,7 +75,9 @@ void LEDController::update() {
       fill_solid(leds1, NUM_LEDS_PER_STRIP, dimWhite);
       fill_solid(leds2, NUM_LEDS_PER_STRIP, dimWhite);
       
+      noInterrupts(); // Temporarily disable interrupts during LED update
       FastLED.show();
+      interrupts(); // Re-enable interrupts
       
       // Track show call timing
       unsigned long now = millis();
@@ -99,8 +103,11 @@ void LEDController::update() {
       updateSolidEffect();
     }
     
-    // Update the LEDs for ALL modes, not just SOLID mode
+    // Always show both LED strips together with a single FastLED.show call
+    // This ensures synchronization between the strips
+    noInterrupts(); // Temporarily disable interrupts during LED update
     FastLED.show();
+    interrupts(); // Re-enable interrupts
     
     // Track show call timing
     unsigned long now = millis();
