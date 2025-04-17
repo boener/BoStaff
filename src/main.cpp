@@ -297,6 +297,19 @@ void loop() {
     }
   }
   
+  // NEW: Check if PowerManager has requested a brightness change
+  if (powerManager.needsBrightnessChange()) {
+    uint8_t newBrightness = powerManager.getRequestedBrightness();
+    
+    // Let LEDController handle the brightness change
+    ledController.setBrightness(newBrightness);
+    Serial.print("Brightness changed via PowerManager to: ");
+    Serial.println(newBrightness);
+    
+    // Clear the request flag
+    powerManager.clearBrightnessRequest();
+  }
+  
   // Update LED effects based on current mode
   switch (config.currentMode) {
     case EFFECT_FIRE:

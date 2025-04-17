@@ -33,9 +33,14 @@ private:
   unsigned long lastBatteryCheck;  // Added to control battery check interval
   const unsigned long BATTERY_CHECK_INTERVAL = 5000;  // Check battery every 5 seconds instead of 1
   
+  // New: Flag for brightness changes
+  bool brightnessChangeRequested;
+  uint8_t requestedBrightness;
+  
 public:
   PowerManager() : lastActiveTime(0), lowBatteryMode(false), batteryVoltage(0.0), 
-                   originalBrightness(255), lastBatteryCheck(0) {}
+                   originalBrightness(255), lastBatteryCheck(0), 
+                   brightnessChangeRequested(false), requestedBrightness(0) {}
   
   void begin() {
     // Initialize power management
@@ -65,13 +70,20 @@ public:
       if (batteryVoltage < BATTERY_MIN_VOLTAGE && !lowBatteryMode) {
         lowBatteryMode = true;
         originalBrightness = FastLED.getBrightness();
-        // Reduce brightness to conserve power
-        FastLED.setBrightness(originalBrightness / 2);
+        
+        // MODIFIED: Instead of directly changing brightness, set a flag
+        requestedBrightness = originalBrightness / 2;
+        brightnessChangeRequested = true;
+        
         Serial.println("Low battery mode activated");
       } else if (batteryVoltage > (BATTERY_MIN_VOLTAGE + 0.2) && lowBatteryMode) {
         // Restore normal operation when voltage is back up
         lowBatteryMode = false;
-        FastLED.setBrightness(originalBrightness);
+        
+        // MODIFIED: Instead of directly changing brightness, set a flag
+        requestedBrightness = originalBrightness;
+        brightnessChangeRequested = true;
+        
         Serial.println("Normal power mode restored");
       }
     }
@@ -82,9 +94,10 @@ public:
       Serial.println("Entering sleep mode");
       // Save any unsaved settings here
       
-      // Fade LEDs to black
-      uint8_t originalBrightness = FastLED.getBrightness();
-      for (int i = originalBrightness; i >= 0; i--) {
+      // Note: This fade effect uses FastLED.show() directly, but it happens just
+      // before sleep so it shouldn't interfere with normal operation
+      uint8_t currentBrightness = FastLED.getBrightness();
+      for (int i = currentBrightness; i >= 0; i--) {
         FastLED.setBrightness(i);
         FastLED.show();
         delay(20);
@@ -111,6 +124,19 @@ public:
   
   bool isLowBattery() {
     return lowBatteryMode;
+  }
+  
+  // New: Methods to check and clear brightness change requests
+  bool needsBrightnessChange() {
+    return brightnessChangeRequested;
+  }
+  
+  uint8_t getRequestedBrightness() {
+    return requestedBrightness;
+  }
+  
+  void clearBrightnessRequest() {
+    brightnessChangeRequested = false;
   }
 };
 
