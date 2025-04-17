@@ -17,11 +17,12 @@ private:
   uint8_t density;     // For twinkle effect
   bool isFolded;       // Whether the LED strip is folded
   bool initialized;    // New flag to track initialization status
+  unsigned long lastUpdate; // Timestamp of last update
   
 public:
   RainbowEffect(CRGB* leds, int count, bool folded = true) : 
     ledArray(nullptr), numLeds(0), mode(0), hue(0), saturation(240), 
-    speed(30), density(50), isFolded(folded), initialized(false) {
+    speed(30), density(50), isFolded(folded), initialized(false), lastUpdate(0) {
     
     // Validate inputs
     if (!leds || count <= 0) {
@@ -32,6 +33,7 @@ public:
     ledArray = leds;
     numLeds = count;
     initialized = true;
+    lastUpdate = millis(); // Initialize the last update time
   }
   
   bool isInitialized() const {
@@ -65,6 +67,14 @@ public:
       }
       return;
     }
+    
+    // Add timing control to prevent too-rapid updates
+    unsigned long currentMillis = millis();
+    // Only update the effect every 20ms (50 updates per second)
+    if (currentMillis - lastUpdate < 20) {
+      return;
+    }
+    lastUpdate = currentMillis;
     
     switch (mode) {
       case 0: // Smooth cycle - entire strip changes color together

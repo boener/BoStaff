@@ -20,12 +20,13 @@ private:
   bool isFolded;     // Whether the LED strip is folded
   uint8_t flashMaxBrightness; // Maximum brightness for flash (to prevent power issues)
   bool initialized;  // New flag to track initialization status
+  unsigned long lastUpdate; // Timestamp of last update
   
 public:
   StrobeEffect(CRGB* leds, int count, bool folded = true) : 
     ledArray(nullptr), numLeds(0), mode(0), speed(50), duty(10),
     color(CRGB::White), count(0), chance(5), active(false), 
-    isFolded(folded), flashMaxBrightness(25), initialized(false) {
+    isFolded(folded), flashMaxBrightness(25), initialized(false), lastUpdate(0) {
     
     // Validate inputs
     if (!leds || count <= 0) {
@@ -36,6 +37,7 @@ public:
     ledArray = leds;
     numLeds = count;
     initialized = true;
+    lastUpdate = millis(); // Initialize the last update time
   }
   
   bool isInitialized() const {
@@ -76,6 +78,15 @@ public:
       }
       return;
     }
+    
+    // Add timing control to prevent too-rapid updates
+    unsigned long currentMillis = millis();
+    // Only update the effect every 20ms (50 updates per second)
+    // This creates a consistent frame rate regardless of how often update() is called
+    if (currentMillis - lastUpdate < 20) {
+      return;
+    }
+    lastUpdate = currentMillis;
     
     // Variables declared outside case statements to avoid C++ scope errors
     CRGB flashColor;

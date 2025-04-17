@@ -1,9 +1,5 @@
 #include "BoStaff.h"
 
-// Add a debugging variable to track FastLED show calls
-unsigned long lastShowTime = 0;
-unsigned long showCallCount = 0;
-
 void LEDController::begin(Config* cfg) {
   config = cfg;
   currentMode = config->currentMode;
@@ -20,7 +16,6 @@ void LEDController::begin(Config* cfg) {
   fill_solid(leds1, NUM_LEDS_PER_STRIP, CRGB::Black);
   fill_solid(leds2, NUM_LEDS_PER_STRIP, CRGB::Black);
   FastLED.show();
-  lastShowTime = millis(); // Initialize show time tracking
   
   // Initialize effect variables
   effectStep = 0;
@@ -41,7 +36,6 @@ void LEDController::update() {
       // Impact effect is over, restore normal brightness
       impactEffectActive = false;
       FastLED.setBrightness(normalBrightness);
-      Serial.println("Impact effect ended, restored normal brightness");
       
       // Clear both strips after impact to prevent any artifacts
       fill_solid(leds1, NUM_LEDS_PER_STRIP, CRGB::Black);
@@ -49,23 +43,9 @@ void LEDController::update() {
       
       // Force a show here to ensure black frame is displayed before next effect starts
       FastLED.show();
-      
-      // Track show call timing
-      unsigned long now = millis();
-      unsigned long timeSinceLastShow = now - lastShowTime;
-      lastShowTime = now;
-      showCallCount++;
-      
-      if (timeSinceLastShow < 1100 && timeSinceLastShow > 900) {
-        Serial.print("TIMING: FastLED.show() called at ~1s interval: ");
-        Serial.print(timeSinceLastShow);
-        Serial.print("ms, count: ");
-        Serial.println(showCallCount);
-      }
     } else {
       // Show impact effect (dim white flash)
       FastLED.setBrightness(config->impactBrightness); // Use the impact-specific brightness
-      Serial.print("*** Impact Flash Brightness Set To: "); Serial.println(config->impactBrightness);
       
       // Use dimmer white (25, 25, 25) instead of full white (255, 255, 255)
       // This ensures the color itself is also dimmer, not just the overall brightness
@@ -74,20 +54,6 @@ void LEDController::update() {
       fill_solid(leds2, NUM_LEDS_PER_STRIP, dimWhite);
       
       FastLED.show();
-      
-      // Track show call timing
-      unsigned long now = millis();
-      unsigned long timeSinceLastShow = now - lastShowTime;
-      lastShowTime = now;
-      showCallCount++;
-      
-      if (timeSinceLastShow < 1100 && timeSinceLastShow > 900) {
-        Serial.print("TIMING: FastLED.show() called at ~1s interval: ");
-        Serial.print(timeSinceLastShow);
-        Serial.print("ms, count: ");
-        Serial.println(showCallCount);
-      }
-      
       return; // Don't run other effects during impact
     }
   }
@@ -101,19 +67,6 @@ void LEDController::update() {
     
     // Update the LEDs for ALL modes, not just SOLID mode
     FastLED.show();
-    
-    // Track show call timing
-    unsigned long now = millis();
-    unsigned long timeSinceLastShow = now - lastShowTime;
-    lastShowTime = now;
-    showCallCount++;
-    
-    if (timeSinceLastShow < 1100 && timeSinceLastShow > 900) {
-      Serial.print("TIMING: FastLED.show() called at ~1s interval: ");
-      Serial.print(timeSinceLastShow);
-      Serial.print("ms, count: ");
-      Serial.println(showCallCount);
-    }
     
     // Increment effect step for animations
     effectStep++;
@@ -151,9 +104,8 @@ void LEDController::triggerImpactEffect() {
   // Re-enable interrupts
   interrupts();
   
-  Serial.println("Impact effect triggered");
-  Serial.print("Normal brightness: "); Serial.println(normalBrightness);
-  Serial.print("Impact brightness: "); Serial.println(config->impactBrightness); 
+  // Remove serial printing to avoid interruptions
+  // Serial.println("Impact effect triggered");
 }
 
 void LEDController::setBrightness(uint8_t brightness) {

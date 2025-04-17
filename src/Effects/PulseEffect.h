@@ -16,11 +16,12 @@ private:
   uint8_t waveCount;
   bool isFolded; // Whether the LED strip is folded
   bool initialized; // New flag to track initialization status
+  unsigned long lastUpdate; // Timestamp of last update
   
 public:
   PulseEffect(CRGB* leds, int count, bool folded = true) : 
     ledArray(nullptr), numLeds(0), hue(0), baseHue(0), hueStep(1), 
-    waveCount(1), isFolded(folded), initialized(false) {
+    waveCount(1), isFolded(folded), initialized(false), lastUpdate(0) {
     
     // Validate inputs
     if (!leds || count <= 0) {
@@ -31,6 +32,7 @@ public:
     ledArray = leds;
     numLeds = count;
     initialized = true;
+    lastUpdate = millis(); // Initialize the last update time
   }
   
   bool isInitialized() const {
@@ -58,6 +60,14 @@ public:
       }
       return;
     }
+    
+    // Add timing control to prevent too-rapid updates
+    unsigned long currentMillis = millis();
+    // Only update the effect every 20ms (50 updates per second)
+    if (currentMillis - lastUpdate < 20) {
+      return;
+    }
+    lastUpdate = currentMillis;
     
     // For folded strips, both ends (LED 0 and LED count-1) are at the center
     // and the middle of the strip (LED count/2) is at the far end

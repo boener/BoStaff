@@ -44,6 +44,10 @@ bool buttonWasPressed = false;
 unsigned long lastAccelUpdate = 0;
 const unsigned long ACCEL_UPDATE_INTERVAL = 25; // Only read accelerometer every 25ms to reduce I2C traffic
 
+// Main loop timing control
+unsigned long lastLoopTime = 0;
+const unsigned long LOOP_INTERVAL = 5; // 5ms loop interval for consistent timing
+
 // Function to initialize all effect objects
 void initializeAllEffects() {
   // Clear any existing effects first
@@ -176,11 +180,21 @@ void setup() {
   Serial.println(F("\nTo enter accelerometer calibration mode,"));
   Serial.println(F("hold the button for 5 seconds until all LEDs flash blue."));
   
-  // Initialize accelerometer update timing
+  // Initialize timing variables
   lastAccelUpdate = millis();
+  lastLoopTime = millis();
 }
 
 void loop() {
+  // Add timing control to main loop for consistent performance
+  unsigned long currentMillis = millis();
+  if (currentMillis - lastLoopTime < LOOP_INTERVAL) {
+    // Not enough time has passed, yield to other processes
+    yield();
+    return;
+  }
+  lastLoopTime = currentMillis;
+  
   // Check for calibration mode trigger (long button press)
   if (digitalRead(BTN_PIN) == LOW) {  // Button pressed (active LOW)
     if (!buttonWasPressed) {

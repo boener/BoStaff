@@ -16,11 +16,12 @@ private:
   bool reversed;
   bool isFolded; // Whether the LED strip is folded
   bool initialized; // New flag to track initialization status
+  unsigned long lastUpdate; // Timestamp of last update
   
 public:
   FireEffect(CRGB* leds, int count, bool reverse = false, bool folded = true) : 
     ledArray(nullptr), numLeds(0), heat(nullptr), cooling(85), sparking(90),
-    reversed(reverse), isFolded(folded), initialized(false) {
+    reversed(reverse), isFolded(folded), initialized(false), lastUpdate(0) {
     
     // Validate inputs
     if (!leds || count <= 0) {
@@ -42,6 +43,8 @@ public:
       Serial.println("ERROR: FireEffect failed to allocate heat array");
       numLeds = 0; // Mark as invalid
     }
+    
+    lastUpdate = millis(); // Initialize the last update time
   }
   
   ~FireEffect() {
@@ -76,6 +79,14 @@ public:
       }
       return;
     }
+    
+    // Add timing control to prevent too-rapid updates
+    unsigned long currentMillis = millis();
+    // Only update the effect every 20ms (50 updates per second)
+    if (currentMillis - lastUpdate < 20) {
+      return;
+    }
+    lastUpdate = currentMillis;
     
     // For a folded strip, we need to treat the 'middle' LED indexes as the physical far end
     // and the 0 and (count-1) as the physical center/hilt
