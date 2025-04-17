@@ -1,12 +1,21 @@
 #include "BoStaff.h"
 
+// Maximum amount of time to spend in FastLED.show() function
+// This helps manage timing on the ESP8266
+#define FASTLED_ALLOW_INTERRUPTS 0
+#define FASTLED_ESP8266_DMA
+
 void LEDController::begin(Config* cfg) {
   config = cfg;
   currentMode = config->currentMode;
   
-  // Setup the LED strips with the updated pin assignments
-  FastLED.addLeds<WS2812B, LED_PIN_1, GRB>(leds1, NUM_LEDS_PER_STRIP).setCorrection(TypicalLEDStrip);
-  FastLED.addLeds<WS2812B, LED_PIN_2, GRB>(leds2, NUM_LEDS_PER_STRIP).setCorrection(TypicalLEDStrip);
+  // Setup the LED strips with the updated pin assignments and controller settings
+  // Use RGB color order instead of GRB to potentially fix timing issues
+  FastLED.addLeds<WS2812B, LED_PIN_1, RGB>(leds1, NUM_LEDS_PER_STRIP).setCorrection(TypicalLEDStrip);
+  FastLED.addLeds<WS2812B, LED_PIN_2, RGB>(leds2, NUM_LEDS_PER_STRIP).setCorrection(TypicalLEDStrip);
+  
+  // Set maximum power limit to avoid current issues (3A at 5V = 15W)
+  FastLED.setMaxPowerInVoltsAndMilliamps(5, 3000);
   
   // Set initial brightness (reduced to 25, approximately 10% of max 255)
   normalBrightness = config->brightness;
@@ -15,14 +24,17 @@ void LEDController::begin(Config* cfg) {
   // Clear the LEDs to start
   fill_solid(leds1, NUM_LEDS_PER_STRIP, CRGB::Black);
   fill_solid(leds2, NUM_LEDS_PER_STRIP, CRGB::Black);
+  
+  // Initial show to clear all LEDs
   FastLED.show();
+  delay(50); // Small delay to ensure stable startup
   
   // Initialize effect variables
   effectStep = 0;
   effectSpeed = 30; // Default speed
   impactEffectActive = false;
   
-  Serial.println("LED Controller initialized");
+  Serial.println("LED Controller initialized with RGB color order");
   Serial.print("Brightness set to: "); Serial.println(normalBrightness);
   Serial.print("Impact brightness set to: "); Serial.println(config->impactBrightness);
 }
@@ -43,13 +55,10 @@ void LEDController::update() {
       fill_solid(leds2, NUM_LEDS_PER_STRIP, CRGB::Black);
       
       // Force a show here to ensure black frame is displayed before next effect starts
-      noInterrupts(); // Temporarily disable interrupts during LED update
       FastLED.show();
-      interrupts(); // Re-enable interrupts
     } else {
       // Show impact effect (dim white flash)
       FastLED.setBrightness(config->impactBrightness); // Use the impact-specific brightness
-      Serial.print("*** Impact Flash Brightness Set To: "); Serial.println(config->impactBrightness);
       
       // Use dimmer white (25, 25, 25) instead of full white (255, 255, 255)
       // This ensures the color itself is also dimmer, not just the overall brightness
@@ -57,10 +66,7 @@ void LEDController::update() {
       fill_solid(leds1, NUM_LEDS_PER_STRIP, dimWhite);
       fill_solid(leds2, NUM_LEDS_PER_STRIP, dimWhite);
       
-      noInterrupts(); // Temporarily disable interrupts during LED update
       FastLED.show();
-      interrupts(); // Re-enable interrupts
-      
       return; // Don't run other effects during impact
     }
   }
@@ -72,11 +78,8 @@ void LEDController::update() {
       updateSolidEffect();
     }
     
-    // Always show both LED strips together with a single FastLED.show call
-    // This ensures synchronization between the strips
-    noInterrupts(); // Temporarily disable interrupts during LED update
+    // Show the LED strips - let FastLED handle the timing
     FastLED.show();
-    interrupts(); // Re-enable interrupts
     
     // Increment effect step for animations
     effectStep++;
@@ -85,9 +88,6 @@ void LEDController::update() {
 
 void LEDController::setMode(uint8_t mode) {
   if (mode < config->numModes) {
-    // Disable interrupts during mode change to prevent race conditions
-    noInterrupts();
-    
     currentMode = mode;
     effectStep = 0; // Reset effect animation
     
@@ -96,23 +96,14 @@ void LEDController::setMode(uint8_t mode) {
     fill_solid(leds2, NUM_LEDS_PER_STRIP, CRGB::Black);
     FastLED.show();
     
-    // Re-enable interrupts
-    interrupts();
-    
     Serial.print("Mode changed to: ");
     Serial.println(currentMode);
   }
 }
 
 void LEDController::triggerImpactEffect() {
-  // Disable interrupts during impact effect activation to prevent race conditions
-  noInterrupts();
-  
   impactEffectActive = true;
   impactEffectStart = millis();
-  
-  // Re-enable interrupts
-  interrupts();
   
   Serial.println("Impact effect triggered");
   Serial.print("Normal brightness: "); Serial.println(normalBrightness);
@@ -132,9 +123,6 @@ void LEDController::setBrightness(uint8_t brightness) {
 
 // Force a complete refresh of the LED strips
 void LEDController::forceRefresh() {
-  // Disable interrupts during refresh to prevent race conditions
-  noInterrupts();
-  
   // Clear both strips
   fill_solid(leds1, NUM_LEDS_PER_STRIP, CRGB::Black);
   fill_solid(leds2, NUM_LEDS_PER_STRIP, CRGB::Black);
@@ -148,9 +136,6 @@ void LEDController::forceRefresh() {
   
   // Set brightness to correct value
   FastLED.setBrightness(normalBrightness);
-  
-  // Re-enable interrupts
-  interrupts();
   
   Serial.println("LED strips forcefully refreshed");
 }
