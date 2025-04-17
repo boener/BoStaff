@@ -31,7 +31,7 @@ private:
   float batteryVoltage;
   uint8_t originalBrightness;
   unsigned long lastBatteryCheck;  // Added to control battery check interval
-  const unsigned long BATTERY_CHECK_INTERVAL = 5000;  // Check battery every 5 seconds instead of 1
+  const unsigned long BATTERY_CHECK_INTERVAL = 7000;  // Changed from 5000 to 7000 (7 seconds)
   
   // New: Flag for brightness changes
   bool brightnessChangeRequested;
