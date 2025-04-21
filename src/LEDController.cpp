@@ -5,6 +5,9 @@
 #define FASTLED_ALLOW_INTERRUPTS 0
 #define FASTLED_ESP8266_DMA
 
+// Define a frame rate for LED updates (60 FPS is common, but we can try different values)
+#define FRAME_RATE 30  // 30 updates per second should be smooth without overwhelming the system
+
 void LEDController::begin(Config* cfg) {
   config = cfg;
   currentMode = config->currentMode;
@@ -34,13 +37,30 @@ void LEDController::begin(Config* cfg) {
   effectSpeed = 30; // Default speed
   impactEffectActive = false;
   
+  // Initialize frame rate control variables
+  lastUpdate = millis();
+  
   Serial.println("LED Controller initialized");
   Serial.print("Brightness set to: "); Serial.println(normalBrightness);
   Serial.print("Impact brightness set to: "); Serial.println(config->impactBrightness);
+  Serial.print("Frame rate set to: "); Serial.print(FRAME_RATE); Serial.println(" FPS");
 }
 
 void LEDController::update() {
   unsigned long currentMillis = millis();
+  
+  // Calculate if it's time for a new frame
+  // For 30 FPS, we want approximately 33ms between frames (1000ms / 30fps = 33.33ms)
+  unsigned long frameInterval = 1000 / FRAME_RATE;
+  
+  // Only update LEDs at the specified frame rate
+  // This prevents too-frequent updates that might cause issues
+  if (currentMillis - lastUpdate < frameInterval) {
+    return; // Not time for a new frame yet
+  }
+  
+  // Store the time of this update
+  lastUpdate = currentMillis;
   
   // Handle impact effect if active
   if (impactEffectActive) {
@@ -78,7 +98,7 @@ void LEDController::update() {
       updateSolidEffect();
     }
     
-    // Show the LED strips - let FastLED handle the timing
+    // Show the LED strips at the controlled frame rate
     FastLED.show();
     
     // Increment effect step for animations
