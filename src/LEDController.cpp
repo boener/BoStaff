@@ -1,9 +1,9 @@
 #include "BoStaff.h"
 
-// Disable FastLED internal timers and interrupts
-#define FASTLED_INTERRUPT_RETRY_COUNT 0
-#define FASTLED_ALLOW_INTERRUPTS 0
-#define FASTLED_ESP8266_RAW_PIN_ORDER  // Try raw pin order instead of DMA
+// FastLED configuration
+// Note: These must be defined before FastLED.h is included,
+// but since BoStaff.h already includes it, these might not take effect
+// We'll use the settings already defined in FastLED library
 
 void LEDController::begin(Config* cfg) {
   config = cfg;
@@ -11,9 +11,8 @@ void LEDController::begin(Config* cfg) {
   
   // Setup the LED strips with the updated pin assignments and controller settings
   // Using GRB color order which is correct for most WS2812B strips
-  // Disable DMA to see if that helps with the flashing issue
-  FastLED.addLeds<WS2812B, LED_PIN_1, GRB, DATA_RATE_MHZ(800)>(leds1, NUM_LEDS_PER_STRIP).setCorrection(TypicalLEDStrip);
-  FastLED.addLeds<WS2812B, LED_PIN_2, GRB, DATA_RATE_MHZ(800)>(leds2, NUM_LEDS_PER_STRIP).setCorrection(TypicalLEDStrip);
+  FastLED.addLeds<WS2812B, LED_PIN_1, GRB>(leds1, NUM_LEDS_PER_STRIP).setCorrection(TypicalLEDStrip);
+  FastLED.addLeds<WS2812B, LED_PIN_2, GRB>(leds2, NUM_LEDS_PER_STRIP).setCorrection(TypicalLEDStrip);
   
   // Set maximum power limit to avoid current issues (3A at 5V = 15W)
   FastLED.setMaxPowerInVoltsAndMilliamps(5, 3000);
