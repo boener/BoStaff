@@ -1,12 +1,9 @@
 #include "BoStaff.h"
 
-// Maximum amount of time to spend in FastLED.show() function
-// This helps manage timing on the ESP8266
+// Disable FastLED internal timers and interrupts
+#define FASTLED_INTERRUPT_RETRY_COUNT 0
 #define FASTLED_ALLOW_INTERRUPTS 0
-#define FASTLED_ESP8266_DMA
-
-// Define a frame rate for LED updates (60 FPS is common, but we can try different values)
-#define FRAME_RATE 30  // 30 updates per second should be smooth without overwhelming the system
+#define FASTLED_ESP8266_RAW_PIN_ORDER  // Try raw pin order instead of DMA
 
 void LEDController::begin(Config* cfg) {
   config = cfg;
@@ -14,8 +11,9 @@ void LEDController::begin(Config* cfg) {
   
   // Setup the LED strips with the updated pin assignments and controller settings
   // Using GRB color order which is correct for most WS2812B strips
-  FastLED.addLeds<WS2812B, LED_PIN_1, GRB>(leds1, NUM_LEDS_PER_STRIP).setCorrection(TypicalLEDStrip);
-  FastLED.addLeds<WS2812B, LED_PIN_2, GRB>(leds2, NUM_LEDS_PER_STRIP).setCorrection(TypicalLEDStrip);
+  // Disable DMA to see if that helps with the flashing issue
+  FastLED.addLeds<WS2812B, LED_PIN_1, GRB, DATA_RATE_MHZ(800)>(leds1, NUM_LEDS_PER_STRIP).setCorrection(TypicalLEDStrip);
+  FastLED.addLeds<WS2812B, LED_PIN_2, GRB, DATA_RATE_MHZ(800)>(leds2, NUM_LEDS_PER_STRIP).setCorrection(TypicalLEDStrip);
   
   // Set maximum power limit to avoid current issues (3A at 5V = 15W)
   FastLED.setMaxPowerInVoltsAndMilliamps(5, 3000);
@@ -28,9 +26,11 @@ void LEDController::begin(Config* cfg) {
   fill_solid(leds1, NUM_LEDS_PER_STRIP, CRGB::Black);
   fill_solid(leds2, NUM_LEDS_PER_STRIP, CRGB::Black);
   
-  // Initial show to clear all LEDs
+  // Initial show to clear all LEDs - explicitly handle timing
+  noInterrupts();  // Disable interrupts during LED update
   FastLED.show();
-  delay(50); // Small delay to ensure stable startup
+  interrupts();    // Re-enable interrupts
+  delay(50);       // Small delay to ensure stable startup
   
   // Initialize effect variables
   effectStep = 0;
@@ -43,24 +43,10 @@ void LEDController::begin(Config* cfg) {
   Serial.println("LED Controller initialized");
   Serial.print("Brightness set to: "); Serial.println(normalBrightness);
   Serial.print("Impact brightness set to: "); Serial.println(config->impactBrightness);
-  Serial.print("Frame rate set to: "); Serial.print(FRAME_RATE); Serial.println(" FPS");
 }
 
 void LEDController::update() {
   unsigned long currentMillis = millis();
-  
-  // Calculate if it's time for a new frame
-  // For 30 FPS, we want approximately 33ms between frames (1000ms / 30fps = 33.33ms)
-  unsigned long frameInterval = 1000 / FRAME_RATE;
-  
-  // Only update LEDs at the specified frame rate
-  // This prevents too-frequent updates that might cause issues
-  if (currentMillis - lastUpdate < frameInterval) {
-    return; // Not time for a new frame yet
-  }
-  
-  // Store the time of this update
-  lastUpdate = currentMillis;
   
   // Handle impact effect if active
   if (impactEffectActive) {
@@ -75,7 +61,9 @@ void LEDController::update() {
       fill_solid(leds2, NUM_LEDS_PER_STRIP, CRGB::Black);
       
       // Force a show here to ensure black frame is displayed before next effect starts
+      noInterrupts();
       FastLED.show();
+      interrupts();
     } else {
       // Show impact effect (dim white flash)
       FastLED.setBrightness(config->impactBrightness); // Use the impact-specific brightness
@@ -86,7 +74,9 @@ void LEDController::update() {
       fill_solid(leds1, NUM_LEDS_PER_STRIP, dimWhite);
       fill_solid(leds2, NUM_LEDS_PER_STRIP, dimWhite);
       
+      noInterrupts();
       FastLED.show();
+      interrupts();
       return; // Don't run other effects during impact
     }
   }
@@ -98,8 +88,11 @@ void LEDController::update() {
       updateSolidEffect();
     }
     
-    // Show the LED strips at the controlled frame rate
+    // Show the LED strips - explicitly handle timing and disable interrupts
+    // This can help prevent timer conflicts that might cause flashing
+    noInterrupts();
     FastLED.show();
+    interrupts();
     
     // Increment effect step for animations
     effectStep++;
@@ -114,7 +107,10 @@ void LEDController::setMode(uint8_t mode) {
     // Clear LEDs when changing mode
     fill_solid(leds1, NUM_LEDS_PER_STRIP, CRGB::Black);
     fill_solid(leds2, NUM_LEDS_PER_STRIP, CRGB::Black);
+    
+    noInterrupts();
     FastLED.show();
+    interrupts();
     
     Serial.print("Mode changed to: ");
     Serial.println(currentMode);
@@ -146,7 +142,10 @@ void LEDController::forceRefresh() {
   // Clear both strips
   fill_solid(leds1, NUM_LEDS_PER_STRIP, CRGB::Black);
   fill_solid(leds2, NUM_LEDS_PER_STRIP, CRGB::Black);
+  
+  noInterrupts();
   FastLED.show();
+  interrupts();
   
   // Reset effect step counter
   effectStep = 0;
