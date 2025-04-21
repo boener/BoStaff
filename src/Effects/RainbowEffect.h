@@ -4,38 +4,40 @@
 #include <FastLED.h>
 
 // Enhanced Rainbow Effect with multiple modes
-// Adapted for folded LED strip arrangement where LEDs at index 0 and (count-1) are at the center/hilt,
-// and LEDs at index (count/2-1) and (count/2) are at the far end
+// Adapted for the new single-strip design with four segments
 class RainbowEffect {
 private:
   CRGB* ledArray;
-  int numLeds;
+  int numLedsTotal;
+  int segmentLength;
   uint8_t mode;        // 0=smooth cycle, 1=moving rainbow, 2=twinkle
   uint8_t hue;         // Starting hue
   uint8_t saturation;
   uint8_t speed;
   uint8_t density;     // For twinkle effect
-  bool isFolded;       // Whether the LED strip is folded
-  bool initialized;    // New flag to track initialization status
+  bool initialized;
+  LEDController* controller; // Pointer to the LED controller for segment access
   
 public:
-  RainbowEffect(CRGB* leds, int count, bool folded = true) : 
-    ledArray(nullptr), numLeds(0), mode(0), hue(0), saturation(240), 
-    speed(30), density(50), isFolded(folded), initialized(false) {
+  RainbowEffect(LEDController* ledController, int segmentLen = 100) : 
+    ledArray(nullptr), numLedsTotal(0), segmentLength(segmentLen), 
+    mode(0), hue(0), saturation(240), speed(30), density(50), 
+    initialized(false), controller(ledController) {
     
     // Validate inputs
-    if (!leds || count <= 0) {
+    if (!ledController) {
       Serial.println("ERROR: RainbowEffect created with invalid parameters");
       return;
     }
     
-    ledArray = leds;
-    numLeds = count;
+    ledArray = ledController->getLeds();
+    numLedsTotal = NUM_LEDS_TOTAL; // Use the global constant
     initialized = true;
+    Serial.println("RainbowEffect initialized with single-strip approach");
   }
   
   bool isInitialized() const {
-    return initialized && ledArray != nullptr && numLeds > 0;
+    return initialized && ledArray != nullptr && controller != nullptr;
   }
   
   void setMode(uint8_t m) {
@@ -57,7 +59,6 @@ public:
   void update() {
     // Safety check - make sure we have valid memory and initialization
     if (!isInitialized()) {
-      // Log error only once to avoid console spam
       static bool errorLogged = false;
       if (!errorLogged) {
         Serial.println("ERROR: RainbowEffect update called on uninitialized effect");
@@ -87,86 +88,71 @@ public:
 private:
   void updateSmoothCycle() {
     // Fill the entire strip with a single changing color
-    fill_solid(ledArray, numLeds, CHSV(hue, saturation, 255));
+    CRGB color = CHSV(hue, saturation, 255);
+    
+    // Apply to all segments
+    for (int i = 0; i < segmentLength; i++) {
+      controller->getSegment1LED(i) = color;
+      controller->getSegment2LED(i) = color;
+      controller->getSegment3LED(i) = color;
+      controller->getSegment4LED(i) = color;
+    }
   }
   
   void updateMovingRainbow() {
-    // Safety check again
-    if (!isInitialized()) return;
+    // For each segment, create a flowing rainbow pattern
+    // Ensure the pattern flows from center (pos 0) to far end (pos 99)
     
-    uint8_t midPoint = numLeds / 2;
+    // Calculate appropriate hue delta to make the pattern continuous
+    uint8_t hueSpread = 128; // Half the color wheel
     
-    if (isFolded) {
-      // For folded arrangement, we want the rainbow to flow from center outward
-      // or from one end to the other consistently
+    // Update all four segments with flowing rainbow patterns
+    for (int i = 0; i < segmentLength; i++) {
+      // Map position to hue value (0->center, 99->far end)
+      uint8_t hueVal = hue + map(i, 0, segmentLength - 1, 0, hueSpread);
       
-      // Calculate appropriate hue delta to make the pattern continuous
-      uint8_t hueSpread = 128; // Half the color wheel
-      
-      // First half - from center to far end
-      for (int i = 0; i < midPoint; i++) {
-        uint8_t pos = i;
-        uint8_t hueVal = hue + map(pos, 0, midPoint - 1, 0, hueSpread);
-        if (i >= 0 && i < numLeds) { // Bounds check
-          ledArray[i] = CHSV(hueVal, saturation, 255);
-        }
-      }
-      
-      // Second half - from far end back to center
-      // Continue the pattern from where first half ended
-      for (int i = midPoint; i < numLeds; i++) {
-        uint8_t pos = i - midPoint;
-        uint8_t hueVal = hue + map(pos, 0, midPoint - 1, hueSpread, 255);
-        if (i >= 0 && i < numLeds) { // Bounds check
-          ledArray[i] = CHSV(hueVal, saturation, 255);
-        }
-      }
-    } else {
-      // Standard moving rainbow for non-folded arrangement
-      uint8_t deltaHue = 255 / numLeds; // Calculate hue change per LED
-      for (int i = 0; i < numLeds; i++) {
-        if (i >= 0 && i < numLeds) { // Bounds check
-          ledArray[i] = CHSV(hue + (i * deltaHue), saturation, 255);
-        }
-      }
+      // Apply to all four segments
+      controller->getSegment1LED(i) = CHSV(hueVal, saturation, 255);
+      controller->getSegment2LED(i) = CHSV(hueVal, saturation, 255);
+      controller->getSegment3LED(i) = CHSV(hueVal, saturation, 255);
+      controller->getSegment4LED(i) = CHSV(hueVal, saturation, 255);
     }
   }
   
   void updateRainbowTwinkle() {
-    // Safety check again
-    if (!isInitialized()) return;
-    
     // Fade all LEDs slightly each frame
-    for (int i = 0; i < numLeds; i++) {
-      if (i >= 0 && i < numLeds) { // Bounds check
-        ledArray[i].fadeToBlackBy(10);
-      }
+    for (int i = 0; i < segmentLength; i++) {
+      controller->getSegment1LED(i).fadeToBlackBy(10);
+      controller->getSegment2LED(i).fadeToBlackBy(10);
+      controller->getSegment3LED(i).fadeToBlackBy(10);
+      controller->getSegment4LED(i).fadeToBlackBy(10);
     }
     
-    // Randomly light new LEDs
-    for (int i = 0; i < numLeds; i++) {
-      // Use uint8_t for division to avoid type mismatches
-      uint8_t probability = density / uint8_t(10);
-      if (random8() < probability) { // Adjust probability based on density
-        // Use a position-dependent hue for a more organized look if folded
-        uint8_t positionHue;
-        if (isFolded) {
-          uint8_t midPoint = numLeds / 2;
-          // Calculate distance from center (0 to midPoint)
-          uint8_t distFromCenter;
-          if (i < midPoint) {
-            distFromCenter = i;
-          } else {
-            distFromCenter = numLeds - 1 - i;
+    // Randomly light new LEDs across all segments
+    for (int segment = 1; segment <= 4; segment++) {
+      for (int i = 0; i < segmentLength; i++) {
+        // Use uint8_t for division to avoid type mismatches
+        uint8_t probability = density / uint8_t(10);
+        if (random8() < probability) {
+          // Position-dependent hue for a more organized look
+          uint8_t positionHue = map(i, 0, segmentLength - 1, 0, 128);
+          CRGB color = CHSV(hue + positionHue + random8(64), saturation, 255);
+          
+          // Apply to the correct segment
+          switch (segment) {
+            case 1:
+              controller->getSegment1LED(i) = color;
+              break;
+            case 2:
+              controller->getSegment2LED(i) = color;
+              break;
+            case 3:
+              controller->getSegment3LED(i) = color;
+              break;
+            case 4:
+              controller->getSegment4LED(i) = color;
+              break;
           }
-          // Map distance to hue (0-255)
-          positionHue = map(distFromCenter, 0, midPoint, 0, 128);
-        } else {
-          positionHue = 0;
-        }
-        
-        if (i >= 0 && i < numLeds) { // Bounds check
-          ledArray[i] = CHSV(hue + positionHue + random8(64), saturation, 255);
         }
       }
     }

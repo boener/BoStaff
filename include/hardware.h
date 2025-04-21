@@ -30,114 +30,34 @@ private:
   bool lowBatteryMode;
   float batteryVoltage;
   uint8_t originalBrightness;
-  unsigned long lastBatteryCheck;  // Added to control battery check interval
-  const unsigned long BATTERY_CHECK_INTERVAL = 300000;  // Changed to 5 minutes (300,000 ms)
+  unsigned long lastBatteryCheck;  // For controlled battery check interval
+  const unsigned long BATTERY_CHECK_INTERVAL = 300000;  // 5 minutes (300,000 ms)
   
-  // New: Flag for brightness changes
+  // Brightness change flags
   bool brightnessChangeRequested;
   uint8_t requestedBrightness;
+  
+  // Sleep preparation flags
+  bool preparingForSleep;
+  unsigned long sleepPrepStartTime;
   
 public:
   PowerManager() : lastActiveTime(0), lowBatteryMode(false), batteryVoltage(0.0), 
                    originalBrightness(255), lastBatteryCheck(0), 
-                   brightnessChangeRequested(false), requestedBrightness(0) {}
+                   brightnessChangeRequested(false), requestedBrightness(0),
+                   preparingForSleep(false), sleepPrepStartTime(0) {}
   
-  void begin() {
-    // Initialize power management
-    lastActiveTime = millis();
-    lastBatteryCheck = millis();
-    batteryVoltage = readBatteryVoltage();
-    lowBatteryMode = (batteryVoltage < BATTERY_MIN_VOLTAGE);
-    
-    // Set up pins for power monitoring
-    pinMode(BATTERY_PIN, INPUT);
-  }
-  
-  float readBatteryVoltage() {
-    // Read battery voltage through voltage divider
-    int rawValue = analogRead(BATTERY_PIN);
-    float voltage = (rawValue / 1023.0) * 3.3 * BATTERY_DIVIDER;
-    return voltage;
-  }
-  
-  void update() {
-    // Modified: Check battery voltage at controlled intervals
-    if (millis() - lastBatteryCheck >= BATTERY_CHECK_INTERVAL) {
-      batteryVoltage = readBatteryVoltage();
-      lastBatteryCheck = millis();
-      
-      // Check for low battery condition
-      if (batteryVoltage < BATTERY_MIN_VOLTAGE && !lowBatteryMode) {
-        lowBatteryMode = true;
-        originalBrightness = FastLED.getBrightness();
-        
-        // MODIFIED: Instead of directly changing brightness, set a flag
-        requestedBrightness = originalBrightness / 2;
-        brightnessChangeRequested = true;
-        
-        Serial.println("Low battery mode activated");
-      } else if (batteryVoltage > (BATTERY_MIN_VOLTAGE + 0.2) && lowBatteryMode) {
-        // Restore normal operation when voltage is back up
-        lowBatteryMode = false;
-        
-        // MODIFIED: Instead of directly changing brightness, set a flag
-        requestedBrightness = originalBrightness;
-        brightnessChangeRequested = true;
-        
-        Serial.println("Normal power mode restored");
-      }
-    }
-    
-    // Check for inactivity timeout
-    if (POWER_SAVING_MODE && (millis() - lastActiveTime > SLEEP_AFTER_MINS * 60000)) {
-      // Enter sleep mode to save power
-      Serial.println("Entering sleep mode");
-      // Save any unsaved settings here
-      
-      // Note: This fade effect uses FastLED.show() directly, but it happens just
-      // before sleep so it shouldn't interfere with normal operation
-      uint8_t currentBrightness = FastLED.getBrightness();
-      for (int i = currentBrightness; i >= 0; i--) {
-        FastLED.setBrightness(i);
-        FastLED.show();
-        delay(20);
-      }
-      
-      // Put ESP into deep sleep
-      ESP.deepSleep(0);
-    }
-  }
-  
-  void resetActivityTimer() {
-    lastActiveTime = millis();
-  }
-  
-  float getBatteryVoltage() {
-    return batteryVoltage;
-  }
-  
-  float getBatteryPercentage() {
-    // Calculate battery percentage based on voltage
-    float percentage = (batteryVoltage - BATTERY_MIN_VOLTAGE) / (BATTERY_MAX_VOLTAGE - BATTERY_MIN_VOLTAGE) * 100.0;
-    return constrain(percentage, 0.0, 100.0);
-  }
-  
-  bool isLowBattery() {
-    return lowBatteryMode;
-  }
-  
-  // New: Methods to check and clear brightness change requests
-  bool needsBrightnessChange() {
-    return brightnessChangeRequested;
-  }
-  
-  uint8_t getRequestedBrightness() {
-    return requestedBrightness;
-  }
-  
-  void clearBrightnessRequest() {
-    brightnessChangeRequested = false;
-  }
+  // Function declarations - implementations moved to PowerManager.cpp
+  void begin();
+  float readBatteryVoltage();
+  void update();
+  void resetActivityTimer();
+  float getBatteryVoltage();
+  float getBatteryPercentage();
+  bool isLowBattery();
+  bool needsBrightnessChange();
+  uint8_t getRequestedBrightness();
+  void clearBrightnessRequest();
 };
 
 #endif // HARDWARE_H

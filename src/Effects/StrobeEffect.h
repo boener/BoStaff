@@ -4,12 +4,12 @@
 #include <FastLED.h>
 
 // Advanced Strobe Effect with multi-mode capabilities
-// Adapted for folded LED strip arrangement where LEDs at index 0 and (count-1) are at the center/hilt,
-// and LEDs at index (count/2-1) and (count/2) are at the far end
+// Adapted for the new single-strip design with four segments
 class StrobeEffect {
 private:
   CRGB* ledArray;
-  int numLeds;
+  int numLedsTotal;
+  int segmentLength;
   uint8_t mode;      // 0=white strobe, 1=color strobe, 2=lightning
   uint8_t speed;     // Controls flash frequency
   uint8_t duty;      // Duty cycle (ratio of on vs off time)
@@ -17,29 +17,31 @@ private:
   uint16_t count;    // Counter for effect timing
   uint8_t chance;    // Lightning strike chance (0-255)
   bool active;       // Current state of the strobe
-  bool isFolded;     // Whether the LED strip is folded
-  uint8_t flashMaxBrightness; // Maximum brightness for flash (to prevent power issues)
-  bool initialized;  // New flag to track initialization status
+  uint8_t flashMaxBrightness; // Maximum brightness for flash
+  bool initialized;  // Flag to track initialization status
+  LEDController* controller; // Pointer to the LED controller for segment access
   
 public:
-  StrobeEffect(CRGB* leds, int count, bool folded = true) : 
-    ledArray(nullptr), numLeds(0), mode(0), speed(50), duty(10),
-    color(CRGB::White), count(0), chance(5), active(false), 
-    isFolded(folded), flashMaxBrightness(25), initialized(false) {
+  StrobeEffect(LEDController* ledController, int segmentLen = 100) : 
+    ledArray(nullptr), numLedsTotal(0), segmentLength(segmentLen),
+    mode(0), speed(50), duty(10), color(CRGB::White), count(0), 
+    chance(5), active(false), flashMaxBrightness(25), 
+    initialized(false), controller(ledController) {
     
     // Validate inputs
-    if (!leds || count <= 0) {
+    if (!ledController) {
       Serial.println("ERROR: StrobeEffect created with invalid parameters");
       return;
     }
     
-    ledArray = leds;
-    numLeds = count;
+    ledArray = ledController->getLeds();
+    numLedsTotal = NUM_LEDS_TOTAL; // Use the global constant
     initialized = true;
+    Serial.println("StrobeEffect initialized with single-strip approach");
   }
   
   bool isInitialized() const {
-    return initialized && ledArray != nullptr && numLeds > 0;
+    return initialized && ledArray != nullptr && controller != nullptr;
   }
   
   void setMode(uint8_t m) {
@@ -68,7 +70,6 @@ public:
   void update() {
     // Safety check - make sure we have valid memory and initialization
     if (!isInitialized()) {
-      // Log error only once to avoid console spam
       static bool errorLogged = false;
       if (!errorLogged) {
         Serial.println("ERROR: StrobeEffect update called on uninitialized effect");
@@ -105,9 +106,6 @@ public:
   
 private:
   void updateClassicStrobe(CRGB flashColor) {
-    // Safety check again
-    if (!isInitialized()) return;
-    
     // Calculate period based on speed
     uint16_t period = 255 - speed; // Higher speed = shorter period
     
@@ -120,83 +118,98 @@ private:
     // Determine on/off state
     bool isOn = (count % period) < onTime;
     
-    // Apply to all LEDs
-    for (int i = 0; i < numLeds; i++) {
-      if (i >= 0 && i < numLeds) { // Bounds check
-        ledArray[i] = isOn ? flashColor : CRGB::Black;
-      }
+    // Apply to all segments
+    for (int i = 0; i < segmentLength; i++) {
+      CRGB pixelColor = isOn ? flashColor : CRGB::Black;
+      
+      // Update all four segments
+      controller->getSegment1LED(i) = pixelColor;
+      controller->getSegment2LED(i) = pixelColor;
+      controller->getSegment3LED(i) = pixelColor;
+      controller->getSegment4LED(i) = pixelColor;
     }
   }
   
   void updateLightning() {
-    // Safety check again
-    if (!isInitialized()) return;
-    
-    // Reset all LEDs to black first
-    fill_solid(ledArray, numLeds, CRGB::Black);
-    
-    uint8_t midPoint = numLeds / 2;
+    // Clear all LEDs first
+    for (int i = 0; i < segmentLength; i++) {
+      controller->getSegment1LED(i) = CRGB::Black;
+      controller->getSegment2LED(i) = CRGB::Black;
+      controller->getSegment3LED(i) = CRGB::Black;
+      controller->getSegment4LED(i) = CRGB::Black;
+    }
     
     // Reduced brightness white for lightning
     CRGB lightningColor = CRGB(flashMaxBrightness, flashMaxBrightness, flashMaxBrightness);
     
     // Randomly decide if we should create a lightning flash
     if (random8() < chance) {
-      if (isFolded) {
-        // For folded arrangement, lightning can appear at different places
-        if (random8() < 85) { // 1/3 chance to strike near center
-          // Strike near the center (hilt)
-          uint8_t strikeLength = random8(midPoint / 3);
-          for (int i = 0; i < strikeLength; i++) {
-            if (i >= 0 && i < numLeds) { // Bounds check
-              ledArray[i] = lightningColor; // Starting from one end (center)
-            }
-            
-            int opposite = numLeds - 1 - i;
-            if (opposite >= 0 && opposite < numLeds) { // Bounds check
-              ledArray[opposite] = lightningColor; // Starting from other end (center)
-            }
-          }
-        } else if (random8() < 128) { // 1/3 chance to strike near tip
-          // Strike near the far end (tip)
-          uint8_t strikeLength = random8(midPoint / 3);
-          for (int i = 0; i < strikeLength; i++) {
-            int idx1 = midPoint - 1 - i;
-            int idx2 = midPoint + i;
-            
-            if (idx1 >= 0 && idx1 < numLeds) { // Bounds check
-              ledArray[idx1] = lightningColor; // Near middle from first half
-            }
-            
-            if (idx2 >= 0 && idx2 < numLeds) { // Bounds check
-              ledArray[idx2] = lightningColor; // Near middle from second half
+      // Determine what type of lightning strike to create
+      uint8_t strikeType = random8(3); // 0, 1, or 2
+      
+      switch (strikeType) {
+        case 0: // Strike near center (hilt)
+          {
+            uint8_t strikeLength = random8(segmentLength / 3);
+            for (int i = 0; i < strikeLength; i++) {
+              controller->getSegment1LED(i) = lightningColor;
+              controller->getSegment2LED(i) = lightningColor;
+              controller->getSegment3LED(i) = lightningColor;
+              controller->getSegment4LED(i) = lightningColor;
             }
           }
-        } else { // 1/3 chance to strike full staff
-          // Full staff lightning (but with reduced LEDs to save power)
-          for (int i = 0; i < numLeds; i += 3) { // Only light every 3rd LED
-            if (i >= 0 && i < numLeds) { // Bounds check
-              ledArray[i] = lightningColor;
+          break;
+          
+        case 1: // Strike near far end (tip)
+          {
+            uint8_t strikeLength = random8(segmentLength / 3);
+            for (int i = 0; i < strikeLength; i++) {
+              int pos = segmentLength - 1 - i;
+              controller->getSegment1LED(pos) = lightningColor;
+              controller->getSegment2LED(pos) = lightningColor;
+              controller->getSegment3LED(pos) = lightningColor;
+              controller->getSegment4LED(pos) = lightningColor;
             }
           }
-        }
-      } else {
-        // Full lightning for non-folded arrangement (with power saving)
-        for (int i = 0; i < numLeds; i += 3) { // Only light every 3rd LED
-          if (i >= 0 && i < numLeds) { // Bounds check
-            ledArray[i] = lightningColor;
+          break;
+          
+        case 2: // Full staff lightning (but with reduced LEDs to save power)
+          for (int i = 0; i < segmentLength; i += 3) { // Only light every 3rd LED
+            controller->getSegment1LED(i) = lightningColor;
+            controller->getSegment2LED(i) = lightningColor;
+            controller->getSegment3LED(i) = lightningColor;
+            controller->getSegment4LED(i) = lightningColor;
           }
-        }
+          break;
       }
       
       // Schedule afterglow
       active = true;
     } else if (active) {
       // Decay the lightning effect with afterglow (reduced brightness)
-      uint8_t fade = random8(1, 3); // Reduced from 2-7 to 1-3
-      for (int i = 0; i < numLeds; i++) {
-        if (random8() < 80 && i >= 0 && i < numLeds) { // Reduced from 120 to 80 (31% chance) + bounds check
-          ledArray[i] = CRGB(fade, fade, fade + random8(1, 2)); // Blue tint
+      uint8_t fade = random8(1, 3);
+      
+      for (int segment = 1; segment <= 4; segment++) {
+        for (int i = 0; i < segmentLength; i++) {
+          if (random8() < 80) { // 31% chance
+            CRGB afterglowColor = CRGB(fade, fade, fade + random8(1, 2)); // Blue tint
+            
+            // Apply to the correct segment
+            switch (segment) {
+              case 1:
+                controller->getSegment1LED(i) = afterglowColor;
+                break;
+              case 2:
+                controller->getSegment2LED(i) = afterglowColor;
+                break;
+              case 3:
+                controller->getSegment3LED(i) = afterglowColor;
+                break;
+              case 4:
+                controller->getSegment4LED(i) = afterglowColor;
+                break;
+            }
+          }
         }
       }
       

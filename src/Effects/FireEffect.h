@@ -4,43 +4,41 @@
 #include <FastLED.h>
 
 // Advanced Fire Effect with more realistic appearance
-// Adapted for folded LED strip arrangement where LEDs at index 0 and (count-1) are at the center/hilt,
-// and LEDs at index (count/2-1) and (count/2) are at the far end
+// Adapted for the new single-strip design with four segments
 class FireEffect {
 private:
-  CRGB* ledArray;
-  int numLeds;
-  byte* heat;
-  uint8_t cooling;
-  uint8_t sparking;
-  bool reversed;
-  bool isFolded; // Whether the LED strip is folded
-  bool initialized; // New flag to track initialization status
+  CRGB* ledArray;        // Pointer to the LED array
+  int numLedsTotal;      // Total number of LEDs
+  int segmentLength;     // Length of each segment (100 LEDs)
+  byte* heat;            // Heat array for fire simulation
+  uint8_t cooling;       // Fire cooling parameter
+  uint8_t sparking;      // Fire sparking parameter
+  bool initialized;      // Flag to track initialization status
+  LEDController* controller; // Pointer to the LED controller for segment access
   
 public:
-  FireEffect(CRGB* leds, int count, bool reverse = false, bool folded = true) : 
-    ledArray(nullptr), numLeds(0), heat(nullptr), cooling(85), sparking(90),
-    reversed(reverse), isFolded(folded), initialized(false) {
+  FireEffect(LEDController* ledController, int segmentLen = 100) : 
+    ledArray(nullptr), numLedsTotal(0), segmentLength(segmentLen), heat(nullptr), 
+    cooling(85), sparking(90), initialized(false), controller(ledController) {
     
     // Validate inputs
-    if (!leds || count <= 0) {
-      // Handle invalid input
+    if (!ledController) {
       Serial.println("ERROR: FireEffect created with invalid parameters");
       return;
     }
     
-    ledArray = leds;
-    numLeds = count;
+    ledArray = ledController->getLeds();
+    numLedsTotal = NUM_LEDS_TOTAL; // Use the global constant
     
-    // Allocate the heat array
-    heat = new byte[numLeds];
+    // Allocate the heat array - we need one array per segment
+    heat = new byte[segmentLength * 4]; // 4 segments
     if (heat) {
       // Initialize all elements to zero
-      memset(heat, 0, numLeds);
+      memset(heat, 0, segmentLength * 4);
       initialized = true; // Mark as successfully initialized
+      Serial.println("FireEffect initialized with single-strip approach");
     } else {
-      Serial.println("ERROR: FireEffect failed to allocate heat array");
-      numLeds = 0; // Mark as invalid
+      Serial.println("ERROR: FireEffect failed to allocate heat arrays");
     }
   }
   
@@ -54,7 +52,7 @@ public:
   }
   
   bool isInitialized() const {
-    return initialized && heat != nullptr && ledArray != nullptr;
+    return initialized && heat != nullptr && ledArray != nullptr && controller != nullptr;
   }
   
   void setCooling(uint8_t cool) {
@@ -67,8 +65,7 @@ public:
   
   void update() {
     // Safety check - make sure we have valid memory and initialization
-    if (!isInitialized() || numLeds <= 0) {
-      // Log error only once to avoid console spam
+    if (!isInitialized()) {
       static bool errorLogged = false;
       if (!errorLogged) {
         Serial.println("ERROR: FireEffect update called on uninitialized effect");
@@ -77,74 +74,56 @@ public:
       return;
     }
     
-    // For a folded strip, we need to treat the 'middle' LED indexes as the physical far end
-    // and the 0 and (count-1) as the physical center/hilt
-    uint8_t midPoint = numLeds / 2;
+    // We'll process each segment separately
+    updateSegment(0); // Segment 1 - counts up from 0
+    updateSegment(1); // Segment 2 - counts down from 199
+    updateSegment(2); // Segment 3 - counts up from 200
+    updateSegment(3); // Segment 4 - counts down from 399
+  }
+  
+private:
+  void updateSegment(int segmentIndex) {
+    // Get the starting index for this segment's heat array
+    int heatOffset = segmentIndex * segmentLength;
     
     // Step 1: Cool down every cell a little
-    for (int i = 0; i < numLeds; i++) {
-      heat[i] = qsub8(heat[i], random8(0, ((cooling * 10) / numLeds) + 2));
+    for (int i = 0; i < segmentLength; i++) {
+      heat[heatOffset + i] = qsub8(heat[heatOffset + i], 
+                                  random8(0, ((cooling * 10) / segmentLength) + 2));
     }
   
     // Step 2: Heat from each cell drifts 'up' and diffuses
-    // For folded arrangement, heat rises from both ends toward the middle
-    if (isFolded) {
-      // First half - heat rises from center (0) toward far end (midPoint-1)
-      for (int k = midPoint - 1; k >= 2; k--) {
-        heat[k] = (heat[k - 1] + heat[k - 2] + heat[k - 2]) / 3;
-      }
-      
-      // Second half - heat rises from center (numLeds-1) toward far end (midPoint)
-      for (int k = midPoint; k < numLeds - 2; k++) {
-        heat[k] = (heat[k + 1] + heat[k + 2] + heat[k + 2]) / 3;
-      }
-    } else {
-      // Standard upward drift for non-folded arrangement
-      for (int k = numLeds - 1; k >= 2; k--) {
-        heat[k] = (heat[k - 1] + heat[k - 2] + heat[k - 2]) / 3;
-      }
+    // For all segments, heat rises from center/hilt (pos 0) toward far end (pos 99)
+    for (int k = segmentLength - 1; k >= 2; k--) {
+      heat[heatOffset + k] = (heat[heatOffset + k - 1] + 
+                             heat[heatOffset + k - 2] + 
+                             heat[heatOffset + k - 2]) / 3;
     }
     
-    // Step 3: Randomly ignite new sparks at the bottom/center
-    if (isFolded) {
-      // Sparks can start near both ends (center of the physical staff)
-      if (random8() < sparking) {
-        int y = random8(7); // Near index 0 (center)
-        if (y < numLeds) { // Bounds check
-          heat[y] = qadd8(heat[y], random8(160, 255));
-        }
-      }
-      
-      if (random8() < sparking) {
-        int y = numLeds - 1 - random8(7); // Near index numLeds-1 (center)
-        if (y >= 0 && y < numLeds) { // Bounds check
-          heat[y] = qadd8(heat[y], random8(160, 255));
-        }
-      }
-    } else {
-      // Standard sparking at the bottom for non-folded arrangement
-      if (random8() < sparking) {
-        int y = random8(7);
-        if (y < numLeds) { // Bounds check
-          heat[y] = qadd8(heat[y], random8(160, 255));
-        }
-      }
+    // Step 3: Randomly ignite new sparks at the bottom/center (pos 0)
+    if (random8() < sparking) {
+      int y = random8(7); // Near the center/hilt
+      heat[heatOffset + y] = qadd8(heat[heatOffset + y], random8(160, 255));
     }
   
     // Step 4: Map from heat cells to LED colors
-    for (int j = 0; j < numLeds; j++) {
-      CRGB color = HeatColor(heat[j]);
-      int pixelnumber;
+    for (int j = 0; j < segmentLength; j++) {
+      CRGB color = HeatColor(heat[heatOffset + j]);
       
-      if (reversed) {
-        pixelnumber = (numLeds - 1) - j;
-      } else {
-        pixelnumber = j;
-      }
-      
-      // Bounds check
-      if (pixelnumber >= 0 && pixelnumber < numLeds) {
-        ledArray[pixelnumber] = color;
+      // Use the appropriate segment addressing based on segment index
+      switch (segmentIndex) {
+        case 0: // Segment 1 - counts up from 0
+          controller->getSegment1LED(j) = color;
+          break;
+        case 1: // Segment 2 - counts down from 199
+          controller->getSegment2LED(j) = color;
+          break;
+        case 2: // Segment 3 - counts up from 200
+          controller->getSegment3LED(j) = color;
+          break;
+        case 3: // Segment 4 - counts down from 399
+          controller->getSegment4LED(j) = color;
+          break;
       }
     }
   }

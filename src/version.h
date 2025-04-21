@@ -18,8 +18,9 @@
 #define DEFAULT_IMPACT_BRIGHTNESS 25 // Reduced from 100 to 25 (10% of max 255)
 
 // LED configuration - UPDATED PIN ASSIGNMENTS
-#define LED_PIN_1 D3  // GPIO0 - First LED strip (was D1/GPIO5)
-#define LED_PIN_2 D4  // GPIO2 - Second LED strip (was D2/GPIO4)
+// Comment out LED pin definitions as they're now provided by platformio.ini build flags
+// #define LED_PIN_1 D7  // GPIO13 - First LED strip (moved from D3/GPIO0)
+// #define LED_PIN_2 D4  // GPIO2 - Second LED strip
 #define LED_COUNT_PER_STRIP 200
 #define LED_TYPE WS2812B
 #define COLOR_ORDER GRB

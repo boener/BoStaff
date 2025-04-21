@@ -4,37 +4,38 @@
 #include <FastLED.h>
 
 // Energy Pulse Effect that radiates from center outward
-// Accounts for folded LED arrangement where LED 1 and 200 are at the center/hilt,
-// and LEDs 100 and 101 are at the far end
+// Adapted for the new single-strip design with four segments
 class PulseEffect {
 private:
   CRGB* ledArray;
-  int numLeds;
-  uint8_t hue;
+  int numLedsTotal;
+  int segmentLength;
   uint8_t baseHue;
   uint8_t hueStep;
   uint8_t waveCount;
-  bool isFolded; // Whether the LED strip is folded
-  bool initialized; // New flag to track initialization status
+  bool initialized;
+  LEDController* controller; // Pointer to the LED controller for segment access
   
 public:
-  PulseEffect(CRGB* leds, int count, bool folded = true) : 
-    ledArray(nullptr), numLeds(0), hue(0), baseHue(0), hueStep(1), 
-    waveCount(1), isFolded(folded), initialized(false) {
+  PulseEffect(LEDController* ledController, int segmentLen = 100) : 
+    ledArray(nullptr), numLedsTotal(0), segmentLength(segmentLen), 
+    baseHue(0), hueStep(1), waveCount(1), initialized(false),
+    controller(ledController) {
     
     // Validate inputs
-    if (!leds || count <= 0) {
+    if (!ledController) {
       Serial.println("ERROR: PulseEffect created with invalid parameters");
       return;
     }
     
-    ledArray = leds;
-    numLeds = count;
+    ledArray = ledController->getLeds();
+    numLedsTotal = NUM_LEDS_TOTAL; // Use the global constant
     initialized = true;
+    Serial.println("PulseEffect initialized with single-strip approach");
   }
   
   bool isInitialized() const {
-    return initialized && ledArray != nullptr && numLeds > 0;
+    return initialized && ledArray != nullptr && controller != nullptr;
   }
   
   void setHue(uint8_t newHue) {
@@ -50,7 +51,6 @@ public:
   void update() {
     // Safety check - make sure we have valid memory and initialization
     if (!isInitialized()) {
-      // Log error only once to avoid console spam
       static bool errorLogged = false;
       if (!errorLogged) {
         Serial.println("ERROR: PulseEffect update called on uninitialized effect");
@@ -59,56 +59,57 @@ public:
       return;
     }
     
-    // For folded strips, both ends (LED 0 and LED count-1) are at the center
-    // and the middle of the strip (LED count/2) is at the far end
+    // Update each segment
+    updateSegment(0); // Segment 1
+    updateSegment(1); // Segment 2
+    updateSegment(2); // Segment 3
+    updateSegment(3); // Segment 4
     
-    uint8_t midPoint = numLeds / 2; // Physical midpoint of the strip
-    
-    for (int i = 0; i < numLeds; i++) {
-      // Bounds check
-      if (i < 0 || i >= numLeds) continue;
-      
-      // Calculate distance from center based on folded arrangement
-      uint8_t distanceFromCenter;
-      
-      if (isFolded) {
-        // In folded arrangement:
-        // - LEDs 0 to midPoint-1 go from center to tip
-        // - LEDs midPoint to numLeds-1 go from tip back to center
-        if (i < midPoint) {
-          distanceFromCenter = i; // First half: 0 is at center
-        } else {
-          distanceFromCenter = numLeds - 1 - i; // Second half: numLeds-1 is at center
-        }
-      } else {
-        // For standard linear arrangement
-        distanceFromCenter = abs(i - midPoint);
-      }
+    // Slowly change the base hue for variation
+    EVERY_N_MILLISECONDS(50) {
+      baseHue += hueStep;
+    }
+  }
+  
+private:
+  void updateSegment(int segmentIndex) {
+    for (int i = 0; i < segmentLength; i++) {
+      // Calculate distance from center (0 = center/hilt, 99 = far end)
+      uint8_t distanceFromCenter = i;
       
       // Create multiple sine waves with different frequencies
       // Creates a pulse that travels outward from the center
-      uint16_t brightness = 0; // Use uint16_t to prevent overflow during addition
+      uint16_t brightness = 0;
       
       for (uint8_t w = 1; w <= waveCount; w++) {
-        // Fix max() by making both arguments the same type (uint8_t)
         uint8_t divisor = (w > 1) ? w : uint8_t(1);
         uint8_t b = beatsin8(10 * w, 0, 255 / divisor, 0, distanceFromCenter * 8);
         brightness += b;
       }
       
-      // Fix min() by making both arguments the same type (uint16_t)
+      // Cap the brightness at 255
       brightness = (brightness > uint16_t(255)) ? uint16_t(255) : brightness;
       
       // Calculate hue variation based on distance from center
       uint8_t hueVar = baseHue + distanceFromCenter;
       
-      // Set the LED color
-      ledArray[i] = CHSV(hueVar, 255, brightness);
-    }
-    
-    // Slowly change the base hue for variation
-    EVERY_N_MILLISECONDS(50) {
-      baseHue += hueStep;
+      // Set the LED color in the appropriate segment
+      CRGB color = CHSV(hueVar, 255, brightness);
+      
+      switch (segmentIndex) {
+        case 0: // Segment 1 - counts up from 0
+          controller->getSegment1LED(i) = color;
+          break;
+        case 1: // Segment 2 - counts down from 199
+          controller->getSegment2LED(i) = color;
+          break;
+        case 2: // Segment 3 - counts up from 200
+          controller->getSegment3LED(i) = color;
+          break;
+        case 3: // Segment 4 - counts down from 399
+          controller->getSegment4LED(i) = color;
+          break;
+      }
     }
   }
 };
