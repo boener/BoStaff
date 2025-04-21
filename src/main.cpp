@@ -126,8 +126,8 @@ void setup() {
   
   // Display pin configuration
   Serial.println(F("\nPin Configuration:"));
-  Serial.print(F("LED Strip 1: ")); Serial.print(F("D3 (GPIO0)")); Serial.println(F(" - was D1 (GPIO5)"));
-  Serial.print(F("LED Strip 2: ")); Serial.print(F("D4 (GPIO2)")); Serial.println(F(" - was D2 (GPIO4)"));
+  Serial.print(F("LED Strip 1: ")); Serial.print(F("D7 (GPIO13)")); Serial.println(F(" - was D3 (GPIO0)"));
+  Serial.print(F("LED Strip 2: ")); Serial.print(F("D4 (GPIO2)")); Serial.println(F(" - unchanged"));
   Serial.print(F("MPU-6050 SCL: ")); Serial.println(F("D1 (GPIO5)"));
   Serial.print(F("MPU-6050 SDA: ")); Serial.println(F("D2 (GPIO4)"));
   Serial.print(F("Button: ")); Serial.println(F("D6 (GPIO12)"));

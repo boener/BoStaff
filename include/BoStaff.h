@@ -9,8 +9,8 @@
 #include "effects.h"
 
 // Pin definitions - UPDATED ASSIGNMENTS
-#define LED_PIN_1 D3  // GPIO0 - First LED strip (was D1)
-#define LED_PIN_2 D4  // GPIO2 - Second LED strip (was D2)
+#define LED_PIN_1 D7  // GPIO13 - First LED strip (was D3/GPIO0)
+#define LED_PIN_2 D4  // GPIO2 - Second LED strip (stays the same)
 #define BTN_PIN   D6  // GPIO12 - Button pin
 
 // MPU6050 accelerometer pins (I2C) - Using default pins
