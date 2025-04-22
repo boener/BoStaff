@@ -34,6 +34,14 @@ public:
     Serial.println("PulseEffect initialized with single-strip approach");
   }
   
+  // Added destructor for consistent memory management
+  ~PulseEffect() {
+    // No dynamic memory to free, but we still need to reset state
+    initialized = false;
+    ledArray = nullptr; // Don't delete ledArray as it's managed elsewhere
+    controller = nullptr;
+  }
+  
   bool isInitialized() const {
     return initialized && ledArray != nullptr && controller != nullptr;
   }

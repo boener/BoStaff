@@ -40,6 +40,14 @@ public:
     Serial.println("StrobeEffect initialized with single-strip approach");
   }
   
+  // Added destructor for consistent memory management
+  ~StrobeEffect() {
+    // No dynamic memory to free, but we still need to reset state
+    initialized = false;
+    ledArray = nullptr; // Don't delete ledArray as it's managed elsewhere
+    controller = nullptr;
+  }
+  
   bool isInitialized() const {
     return initialized && ledArray != nullptr && controller != nullptr;
   }

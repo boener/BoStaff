@@ -68,7 +68,7 @@ void initializeAllEffects() {
   // Try to create PulseEffect instance
   pulseEffect = new PulseEffect(&ledController);
   
-  if (!pulseEffect) {
+  if (!pulseEffect || !pulseEffect->isInitialized()) {
     Serial.println(F("Error initializing PulseEffect!"));
     allEffectsInitialized = false;
   }
@@ -76,7 +76,7 @@ void initializeAllEffects() {
   // Try to create RainbowEffect instance
   rainbowEffect = new RainbowEffect(&ledController);
   
-  if (!rainbowEffect) {
+  if (!rainbowEffect || !rainbowEffect->isInitialized()) {
     Serial.println(F("Error initializing RainbowEffect!"));
     allEffectsInitialized = false;
   }
@@ -84,7 +84,7 @@ void initializeAllEffects() {
   // Try to create StrobeEffect instance
   strobeEffect = new StrobeEffect(&ledController);
   
-  if (!strobeEffect) {
+  if (!strobeEffect || !strobeEffect->isInitialized()) {
     Serial.println(F("Error initializing StrobeEffect!"));
     allEffectsInitialized = false;
   }
@@ -319,7 +319,7 @@ void loop() {
       break;
       
     case EFFECT_PULSE:
-      if (pulseEffect) {
+      if (pulseEffect && pulseEffect->isInitialized()) {
         pulseEffect->update();
       } else {
         // Fallback effect
@@ -328,7 +328,7 @@ void loop() {
       break;
       
     case EFFECT_RAINBOW:
-      if (rainbowEffect) {
+      if (rainbowEffect && rainbowEffect->isInitialized()) {
         rainbowEffect->update();
       } else {
         // Fallback effect
@@ -337,7 +337,7 @@ void loop() {
       break;
       
     case EFFECT_STROBE:
-      if (strobeEffect) {
+      if (strobeEffect && strobeEffect->isInitialized()) {
         strobeEffect->update();
       } else {
         // Fallback effect
