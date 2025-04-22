@@ -6,6 +6,7 @@
 #include <Adafruit_MPU6050.h>
 #include <Adafruit_Sensor.h>
 #include <Wire.h>
+#include "BoStaff.h"  // Include BoStaff.h for the global BrightnessMode enum
 #include "EffectsConfig.h"  // Include new config file
 
 // Project version and build info
@@ -23,13 +24,7 @@
 // Power management settings
 #define POWER_SAVING_MODE 1     // Enable power saving features (0=disabled, 1=enabled)
 
-// Brightness mode enum - must match LEDController's BrightnessMode
-enum BrightnessMode {
-  BRIGHTNESS_NORMAL,      // Regular operating brightness
-  BRIGHTNESS_IMPACT,      // Brightness during impact effect
-  BRIGHTNESS_LOW_BATTERY, // Reduced brightness for low battery
-  BRIGHTNESS_SLEEP        // Very dim brightness before sleep
-};
+// Note: BrightnessMode enum is now imported from BoStaff.h
 
 // Power management functions
 class PowerManager {
@@ -65,7 +60,7 @@ public:
   
   // Updated brightness management methods
   bool needsBrightnessChange();
-  BrightnessMode getRequestedBrightnessMode(); // Changed to return a mode instead of a value
+  BrightnessMode getRequestedBrightnessMode(); // Now returns the global BrightnessMode
   void clearBrightnessRequest();
 };
 

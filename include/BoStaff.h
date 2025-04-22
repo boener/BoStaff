@@ -48,17 +48,17 @@ struct Config {
   uint16_t impactFlashDuration = 100;  // Duration of impact flash in ms
 };
 
+// Global BrightnessMode enum that can be used by multiple classes
+enum BrightnessMode {
+  BRIGHTNESS_NORMAL,      // Regular operating brightness
+  BRIGHTNESS_IMPACT,      // Brightness during impact effect
+  BRIGHTNESS_LOW_BATTERY, // Reduced brightness for low battery
+  BRIGHTNESS_SLEEP        // Very dim brightness before sleep
+};
+
 // LED Controller class - UPDATED FOR SINGLE STRIP
 class LEDController {
 public:
-  // Brightness management enum - moved to public so it can be used with type info
-  enum BrightnessMode {
-    BRIGHTNESS_NORMAL,    // Regular operating brightness
-    BRIGHTNESS_IMPACT,    // Brightness during impact effect
-    BRIGHTNESS_LOW_BATTERY, // Reduced brightness for low battery
-    BRIGHTNESS_SLEEP      // Very dim brightness before sleep
-  };
-
   LEDController() : currentMode(0), lastUpdate(0), effectStep(0), effectSpeed(30), 
                   impactEffectStart(0), impactEffectActive(false), 
                   normalBrightness(DEFAULT_BRIGHTNESS),

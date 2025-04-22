@@ -234,7 +234,7 @@ void loop() {
       calibrationMode = false;
       
       // Make sure brightness is restored to normal
-      ledController.setBrightnessMode(LEDController::BRIGHTNESS_NORMAL);
+      ledController.setBrightnessMode(BRIGHTNESS_NORMAL);
       
       // Restore current LED effect
       ledController.setMode(config.currentMode);
@@ -341,31 +341,11 @@ void loop() {
     
     // Check if PowerManager has requested a brightness change
     if (powerManager.needsBrightnessChange()) {
-      // Use the new brightness mode system
+      // Get the brightness mode directly from PowerManager
       BrightnessMode newMode = powerManager.getRequestedBrightnessMode();
       
-      // Map the BrightnessMode to LEDController::BrightnessMode
-      LEDController::BrightnessMode ledMode;
-      switch(newMode) {
-        case BRIGHTNESS_NORMAL:
-          ledMode = LEDController::BRIGHTNESS_NORMAL;
-          break;
-        case BRIGHTNESS_IMPACT:
-          ledMode = LEDController::BRIGHTNESS_IMPACT;
-          break;
-        case BRIGHTNESS_LOW_BATTERY:
-          ledMode = LEDController::BRIGHTNESS_LOW_BATTERY;
-          break;
-        case BRIGHTNESS_SLEEP:
-          ledMode = LEDController::BRIGHTNESS_SLEEP;
-          break;
-        default:
-          ledMode = LEDController::BRIGHTNESS_NORMAL;
-          break;
-      }
-      
-      // Apply the brightness mode
-      ledController.setBrightnessMode(ledMode);
+      // Apply the brightness mode directly (now using the same enum)
+      ledController.setBrightnessMode(newMode);
       
       Serial.print("Brightness mode changed via PowerManager to: ");
       Serial.println(static_cast<int>(newMode)); // Cast to int for readable output
