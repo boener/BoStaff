@@ -2,6 +2,7 @@
 #include "BoStaff.h"
 #include "hardware.h"
 #include "effects.h"
+#include "EffectsConfig.h"
 
 // Global configuration
 Config config;
@@ -92,12 +93,8 @@ void initializeAllEffects() {
   // Clear the LED array to ensure clean start
   fill_solid(ledController.getLeds(), NUM_LEDS_TOTAL, CRGB::Black);
   
-  // Update LEDs with improved timing approach
-  delay(1);
-  noInterrupts();
-  FastLED.show();
-  interrupts();
-  delay(1);
+  // Use centralized safe strip refresh
+  ledController.safeStripRefresh();
   
   if (allEffectsInitialized) {
     Serial.println(F("All LED effects initialized successfully"));
@@ -180,35 +177,19 @@ void loop() {
       
       // Clear all LEDs completely before visual feedback
       fill_solid(ledController.getLeds(), NUM_LEDS_TOTAL, CRGB::Black);
-      
-      // Update LEDs with improved timing approach
-      delay(1);
-      noInterrupts();
-      FastLED.show();
-      interrupts();
-      delay(1);
+      ledController.safeStripRefresh();
       
       delay(100);
       
       // Visual feedback - flash LEDs blue to indicate calibration mode
       fill_solid(ledController.getLeds(), NUM_LEDS_TOTAL, CRGB::Blue);
-      
-      delay(1);
-      noInterrupts();
-      FastLED.show();
-      interrupts();
-      delay(1);
+      ledController.safeStripRefresh();
       
       delay(500);
       
       // Clear all LEDs completely 
       fill_solid(ledController.getLeds(), NUM_LEDS_TOTAL, CRGB::Black);
-      
-      delay(1);
-      noInterrupts();
-      FastLED.show();
-      interrupts();
-      delay(1);
+      ledController.safeStripRefresh();
       
       delay(500);
       
@@ -225,23 +206,13 @@ void loop() {
       
       // Visual feedback - flash LEDs green to indicate calibration complete
       fill_solid(ledController.getLeds(), NUM_LEDS_TOTAL, CRGB::Green);
-      
-      delay(1);
-      noInterrupts();
-      FastLED.show();
-      interrupts();
-      delay(1);
+      ledController.safeStripRefresh();
       
       delay(1000);
       
       // Clear all LEDs completely before restoring normal operation
       fill_solid(ledController.getLeds(), NUM_LEDS_TOTAL, CRGB::Black);
-      
-      delay(1);
-      noInterrupts();
-      FastLED.show();
-      interrupts();
-      delay(1);
+      ledController.safeStripRefresh();
       
       // Completely reinitialize all effect objects to ensure clean state
       initializeAllEffects();
@@ -249,8 +220,8 @@ void loop() {
       // Reset calibration mode
       calibrationMode = false;
       
-      // Make sure brightness is restored
-      FastLED.setBrightness(config.brightness);
+      // Make sure brightness is restored to normal
+      ledController.setBrightnessMode(LEDController::BRIGHTNESS_NORMAL);
       
       // Restore current LED effect
       ledController.setMode(config.currentMode);
@@ -296,12 +267,34 @@ void loop() {
   
   // Check if PowerManager has requested a brightness change
   if (powerManager.needsBrightnessChange()) {
-    uint8_t newBrightness = powerManager.getRequestedBrightness();
+    // Use the new brightness mode system
+    BrightnessMode newMode = powerManager.getRequestedBrightnessMode();
     
-    // Let LEDController handle the brightness change
-    ledController.setBrightness(newBrightness);
-    Serial.print("Brightness changed via PowerManager to: ");
-    Serial.println(newBrightness);
+    // Map the BrightnessMode to LEDController::BrightnessMode
+    LEDController::BrightnessMode ledMode;
+    switch(newMode) {
+      case BRIGHTNESS_NORMAL:
+        ledMode = LEDController::BRIGHTNESS_NORMAL;
+        break;
+      case BRIGHTNESS_IMPACT:
+        ledMode = LEDController::BRIGHTNESS_IMPACT;
+        break;
+      case BRIGHTNESS_LOW_BATTERY:
+        ledMode = LEDController::BRIGHTNESS_LOW_BATTERY;
+        break;
+      case BRIGHTNESS_SLEEP:
+        ledMode = LEDController::BRIGHTNESS_SLEEP;
+        break;
+      default:
+        ledMode = LEDController::BRIGHTNESS_NORMAL;
+        break;
+    }
+    
+    // Apply the brightness mode
+    ledController.setBrightnessMode(ledMode);
+    
+    Serial.print("Brightness mode changed via PowerManager to: ");
+    Serial.println(static_cast<int>(newMode)); // Cast to int for readable output
     
     // Clear the request flag
     powerManager.clearBrightnessRequest();

@@ -1,10 +1,5 @@
 #include "BoStaff.h"
 
-// FastLED configuration
-// Note: These must be defined before FastLED.h is included,
-// but since BoStaff.h already includes it, these might not take effect
-// We'll use the settings already defined in FastLED library
-
 // Helper function to map positions in the virtual 0-99 range to the actual folded LED positions
 int LEDController::mapToFoldedIndex(int virtualPos, int segment) {
   // Ensure virtualPos is in the valid range 0-99
@@ -41,6 +36,19 @@ CRGB& LEDController::getSegment4LED(int pos) {
   return leds[mapToFoldedIndex(pos, 4)];
 }
 
+// Centralized safe strip refresh method
+void LEDController::safeStripRefresh() {
+  // Add a small delay to ensure any pending I2C operations complete
+  delay(1);
+  // Disable interrupts during LED update to prevent timing issues
+  noInterrupts();
+  FastLED.show();
+  // Re-enable interrupts
+  interrupts();
+  // Add another small delay for stability
+  delay(1);
+}
+
 void LEDController::begin(Config* cfg) {
   config = cfg;
   currentMode = config->currentMode;
@@ -55,16 +63,14 @@ void LEDController::begin(Config* cfg) {
   // Set initial brightness
   normalBrightness = config->brightness;
   FastLED.setBrightness(normalBrightness);
+  currentBrightnessMode = BRIGHTNESS_NORMAL;
+  savedBrightness = normalBrightness;
   
   // Clear all LEDs to start
   fill_solid(leds, NUM_LEDS_TOTAL, CRGB::Black);
   
-  // Initial show to clear all LEDs - with improved timing approach
-  delay(1);
-  noInterrupts();  // Disable interrupts during LED update
-  FastLED.show();
-  interrupts();    // Re-enable interrupts
-  delay(1);
+  // Initial show to clear all LEDs
+  safeStripRefresh();
   
   // Initialize effect variables
   effectStep = 0;
@@ -87,18 +93,12 @@ void LEDController::update() {
     if (currentMillis - impactEffectStart >= config->impactFlashDuration) {
       // Impact effect is over, restore normal brightness
       impactEffectActive = false;
-      FastLED.setBrightness(normalBrightness);
+      restorePreviousBrightness();
       Serial.println("Impact effect ended, restored normal brightness");
       
       // Clear all LEDs after impact to prevent any artifacts
       fill_solid(leds, NUM_LEDS_TOTAL, CRGB::Black);
-      
-      // Update LEDs with improved timing approach
-      delay(1);
-      noInterrupts();
-      FastLED.show();
-      interrupts();
-      delay(1);
+      safeStripRefresh();
     } else {
       // Show impact effect (dim white flash)
       FastLED.setBrightness(config->impactBrightness); // Use the impact-specific brightness
@@ -108,12 +108,7 @@ void LEDController::update() {
       CRGB dimWhite = CRGB(25, 25, 25);
       fill_solid(leds, NUM_LEDS_TOTAL, dimWhite);
       
-      // Update LEDs with improved timing approach
-      delay(1);
-      noInterrupts();
-      FastLED.show();
-      interrupts();
-      delay(1);
+      safeStripRefresh();
       return; // Don't run other effects during impact
     }
   }
@@ -125,12 +120,7 @@ void LEDController::update() {
       updateSolidEffect();
     }
     
-    // Update LEDs with improved timing approach
-    delay(1);
-    noInterrupts();
-    FastLED.show();
-    interrupts();
-    delay(1);
+    safeStripRefresh();
     
     // Increment effect step for animations
     effectStep++;
@@ -144,13 +134,7 @@ void LEDController::setMode(uint8_t mode) {
     
     // Clear all LEDs when changing mode
     fill_solid(leds, NUM_LEDS_TOTAL, CRGB::Black);
-    
-    // Update LEDs with improved timing approach
-    delay(1);
-    noInterrupts();
-    FastLED.show();
-    interrupts();
-    delay(1);
+    safeStripRefresh();
     
     Serial.print("Mode changed to: ");
     Serial.println(currentMode);
@@ -158,36 +142,103 @@ void LEDController::setMode(uint8_t mode) {
 }
 
 void LEDController::triggerImpactEffect() {
+  // Save the current brightness before changing to impact mode
+  savedBrightness = getCurrentBrightness();
   impactEffectActive = true;
   impactEffectStart = millis();
+  currentBrightnessMode = BRIGHTNESS_IMPACT;
   
   Serial.println("Impact effect triggered");
-  Serial.print("Normal brightness: "); Serial.println(normalBrightness);
+  Serial.print("Saved normal brightness: "); Serial.println(savedBrightness);
   Serial.print("Impact brightness: "); Serial.println(config->impactBrightness); 
 }
 
+// Enhanced brightness management methods
+
 void LEDController::setBrightness(uint8_t brightness) {
-  normalBrightness = brightness;
+  // Safety bounds check
+  brightness = constrain(brightness, 0, 255);
   
-  // Only set FastLED brightness directly if no impact effect is active
   if (!impactEffectActive) {
+    normalBrightness = brightness;
     FastLED.setBrightness(brightness);
+    config->brightness = brightness;
+    
+    // If we're manually setting brightness, update mode accordingly
+    if (currentBrightnessMode != BRIGHTNESS_IMPACT) {
+      currentBrightnessMode = BRIGHTNESS_NORMAL;
+    }
+    
+    Serial.print("Brightness set to: "); 
+    Serial.println(brightness);
+  } else {
+    // If impact effect is active, store for later but don't apply yet
+    normalBrightness = brightness;
+    config->brightness = brightness;
+    Serial.print("Brightness updated (will apply after impact effect): "); 
+    Serial.println(brightness);
+  }
+}
+
+void LEDController::setBrightnessMode(BrightnessMode mode) {
+  // Skip if already in this mode
+  if (mode == currentBrightnessMode) return;
+  
+  // Save current brightness for potential restore later
+  if (currentBrightnessMode == BRIGHTNESS_NORMAL) {
+    savedBrightness = normalBrightness;
   }
   
-  config->brightness = brightness;
+  // Apply the new brightness mode
+  switch (mode) {
+    case BRIGHTNESS_NORMAL:
+      FastLED.setBrightness(normalBrightness);
+      Serial.print("Brightness mode set to NORMAL: ");
+      Serial.println(normalBrightness);
+      break;
+      
+    case BRIGHTNESS_IMPACT:
+      // This is usually handled by triggerImpactEffect()
+      FastLED.setBrightness(config->impactBrightness);
+      Serial.print("Brightness mode set to IMPACT: ");
+      Serial.println(config->impactBrightness);
+      break;
+      
+    case BRIGHTNESS_LOW_BATTERY:
+      FastLED.setBrightness(LOW_BATTERY_BRIGHTNESS);
+      Serial.print("Brightness mode set to LOW_BATTERY: ");
+      Serial.println(LOW_BATTERY_BRIGHTNESS);
+      break;
+      
+    case BRIGHTNESS_SLEEP:
+      FastLED.setBrightness(DIM_BEFORE_SLEEP);
+      Serial.print("Brightness mode set to SLEEP: ");
+      Serial.println(DIM_BEFORE_SLEEP);
+      break;
+  }
+  
+  currentBrightnessMode = mode;
+}
+
+void LEDController::restorePreviousBrightness() {
+  FastLED.setBrightness(savedBrightness);
+  normalBrightness = savedBrightness;
+  config->brightness = savedBrightness;
+  currentBrightnessMode = BRIGHTNESS_NORMAL;
+  
+  Serial.print("Restored previous brightness: ");
+  Serial.println(savedBrightness);
+}
+
+uint8_t LEDController::getCurrentBrightness() {
+  return FastLED.getBrightness();
 }
 
 // Force a complete refresh of the LED strips
 void LEDController::forceRefresh() {
   // Clear all LEDs
   fill_solid(leds, NUM_LEDS_TOTAL, CRGB::Black);
-  
-  // Update LEDs with improved timing approach
-  delay(1);
-  noInterrupts();
-  FastLED.show();
-  interrupts();
-  delay(1);
+  safeStripRefresh();
   
   // Reset effect step counter
   effectStep = 0;
@@ -203,8 +254,19 @@ void LEDController::forceRefresh() {
 
 // Effect implementation for solid color
 void LEDController::updateSolidEffect() {
-  // Solid color effect - slowly changing hue
-  CRGB color = CHSV(effectStep/2, 255, 255);
+  // Use configuration settings
+  uint8_t hueChangeRate = SOLID_HUE_CHANGE_RATE;
+  
+  // Create color based on configuration
+  CRGB color;
+  
+  if (SOLID_USE_HUE_SHIFT) {
+    // Slowly changing hue
+    color = CHSV(effectStep / hueChangeRate, 255, 255);
+  } else {
+    // Fixed color
+    color = CRGB::Red; // Default solid color
+  }
   
   // Apply the same color to all LEDs
   fill_solid(leds, NUM_LEDS_TOTAL, color);

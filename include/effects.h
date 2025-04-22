@@ -1,6 +1,9 @@
 #ifndef EFFECTS_H
 #define EFFECTS_H
 
+// Forward declaration of the LEDController class
+class LEDController;
+
 // Include all effect implementations
 #include "../src/Effects/FireEffect.h"
 #include "../src/Effects/PulseEffect.h"

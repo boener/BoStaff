@@ -7,6 +7,7 @@
 #include <Adafruit_Sensor.h>
 #include <Wire.h>
 #include "effects.h"
+#include "EffectsConfig.h" // Include the new config file
 
 // Pin definitions - UPDATED FOR SINGLE STRIP
 #define LED_PIN D7  // GPIO13 - Single LED strip
@@ -35,8 +36,8 @@
 // Global configuration structure
 struct Config {
   uint8_t currentMode = EFFECT_FIRE;   // Default mode
-  uint8_t brightness = 25;            // 10% of 255
-  uint8_t impactBrightness = 25;     // 10% of 255
+  uint8_t brightness = DEFAULT_BRIGHTNESS;            // Default from config
+  uint8_t impactBrightness = IMPACT_BRIGHTNESS;     // From config
   uint8_t numModes = NUM_EFFECTS;      // Number of available modes
   uint16_t impactThreshold = 1600;     // ~1.6G acceleration
   uint16_t impactFlashDuration = 100;  // Duration of impact flash in ms
@@ -44,6 +45,46 @@ struct Config {
 
 // LED Controller class - UPDATED FOR SINGLE STRIP
 class LEDController {
+public:
+  // Brightness management enum - moved to public so it can be used with type info
+  enum BrightnessMode {
+    BRIGHTNESS_NORMAL,    // Regular operating brightness
+    BRIGHTNESS_IMPACT,    // Brightness during impact effect
+    BRIGHTNESS_LOW_BATTERY, // Reduced brightness for low battery
+    BRIGHTNESS_SLEEP      // Very dim brightness before sleep
+  };
+
+  LEDController() : currentMode(0), lastUpdate(0), effectStep(0), effectSpeed(30), 
+                  impactEffectStart(0), impactEffectActive(false), 
+                  normalBrightness(DEFAULT_BRIGHTNESS),
+                  currentBrightnessMode(BRIGHTNESS_NORMAL),
+                  savedBrightness(DEFAULT_BRIGHTNESS) {}
+  
+  // Safe strip refresh method (public so it can be accessed from main)
+  void safeStripRefresh();
+  
+  void begin(Config* cfg);
+  void update();
+  void setMode(uint8_t mode);
+  void triggerImpactEffect();
+  
+  // Enhanced brightness management
+  void setBrightness(uint8_t brightness); // Set specific brightness value
+  void setBrightnessMode(BrightnessMode mode); // Set brightness by mode
+  void restorePreviousBrightness(); // Restore previous brightness
+  uint8_t getCurrentBrightness(); // Get current brightness
+  
+  void forceRefresh();
+  
+  // Getter for LED array
+  CRGB* getLeds() { return leds; }
+  
+  // Functions to access LED segments with proper folding logic
+  CRGB& getSegment1LED(int pos); // 0-99 (counts up)
+  CRGB& getSegment2LED(int pos); // 0-99 (counts down from end)
+  CRGB& getSegment3LED(int pos); // 0-99 (counts up)
+  CRGB& getSegment4LED(int pos); // 0-99 (counts down from end)
+
 private:
   CRGB leds[NUM_LEDS_TOTAL];  // Single array for all LEDs
   Config* config;
@@ -55,6 +96,9 @@ private:
   bool impactEffectActive;
   uint8_t normalBrightness; // Store normal brightness to restore after impact
   
+  BrightnessMode currentBrightnessMode;
+  uint8_t savedBrightness; // For restoring previous brightness
+  
   // Effect functions
   void updateFireEffect();
   void updatePulseEffect();
@@ -65,26 +109,6 @@ private:
   // Helper function to map a virtual position (0-99) to the actual folded LED position
   // This handles the four segment arrangement
   int mapToFoldedIndex(int virtualPos, int segment);
-  
-public:
-  LEDController() : currentMode(0), lastUpdate(0), effectStep(0), effectSpeed(30), 
-                    impactEffectStart(0), impactEffectActive(false), normalBrightness(25) {}
-  
-  void begin(Config* cfg);
-  void update();
-  void setMode(uint8_t mode);
-  void triggerImpactEffect();
-  void setBrightness(uint8_t brightness);
-  void forceRefresh();
-  
-  // Getter for LED array
-  CRGB* getLeds() { return leds; }
-  
-  // Functions to access LED segments with proper folding logic
-  CRGB& getSegment1LED(int pos); // 0-99 (counts up)
-  CRGB& getSegment2LED(int pos); // 0-99 (counts down from end)
-  CRGB& getSegment3LED(int pos); // 0-99 (counts up)
-  CRGB& getSegment4LED(int pos); // 0-99 (counts down from end)
 };
 
 // Button handler class

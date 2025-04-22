@@ -6,6 +6,7 @@
 #include <Adafruit_MPU6050.h>
 #include <Adafruit_Sensor.h>
 #include <Wire.h>
+#include "EffectsConfig.h"  // Include new config file
 
 // Project version and build info
 #include "../src/version.h"
@@ -21,7 +22,14 @@
 
 // Power management settings
 #define POWER_SAVING_MODE 1     // Enable power saving features (0=disabled, 1=enabled)
-#define SLEEP_AFTER_MINS 30     // Minutes of inactivity before entering sleep mode
+
+// Brightness mode enum - must match LEDController's BrightnessMode
+enum BrightnessMode {
+  BRIGHTNESS_NORMAL,      // Regular operating brightness
+  BRIGHTNESS_IMPACT,      // Brightness during impact effect
+  BRIGHTNESS_LOW_BATTERY, // Reduced brightness for low battery
+  BRIGHTNESS_SLEEP        // Very dim brightness before sleep
+};
 
 // Power management functions
 class PowerManager {
@@ -30,12 +38,11 @@ private:
   bool lowBatteryMode;
   float batteryVoltage;
   uint8_t originalBrightness;
-  unsigned long lastBatteryCheck;  // For controlled battery check interval
-  const unsigned long BATTERY_CHECK_INTERVAL = 300000;  // 5 minutes (300,000 ms)
+  unsigned long lastBatteryCheck;
   
-  // Brightness change flags
+  // Brightness change flags and modes
   bool brightnessChangeRequested;
-  uint8_t requestedBrightness;
+  BrightnessMode requestedBrightnessMode;
   
   // Sleep preparation flags
   bool preparingForSleep;
@@ -43,11 +50,11 @@ private:
   
 public:
   PowerManager() : lastActiveTime(0), lowBatteryMode(false), batteryVoltage(0.0), 
-                   originalBrightness(255), lastBatteryCheck(0), 
-                   brightnessChangeRequested(false), requestedBrightness(0),
+                   originalBrightness(DEFAULT_BRIGHTNESS), lastBatteryCheck(0), 
+                   brightnessChangeRequested(false), requestedBrightnessMode(BRIGHTNESS_NORMAL),
                    preparingForSleep(false), sleepPrepStartTime(0) {}
   
-  // Function declarations - implementations moved to PowerManager.cpp
+  // Function declarations - implementations in PowerManager.cpp
   void begin();
   float readBatteryVoltage();
   void update();
@@ -55,8 +62,10 @@ public:
   float getBatteryVoltage();
   float getBatteryPercentage();
   bool isLowBattery();
+  
+  // Updated brightness management methods
   bool needsBrightnessChange();
-  uint8_t getRequestedBrightness();
+  BrightnessMode getRequestedBrightnessMode(); // Changed to return a mode instead of a value
   void clearBrightnessRequest();
 };
 

@@ -1,4 +1,5 @@
 #include "hardware.h"
+#include "EffectsConfig.h" // Include the config file
 
 // Power management implementation
 void PowerManager::begin() {
@@ -11,8 +12,14 @@ void PowerManager::begin() {
   // Set up pins for power monitoring
   pinMode(BATTERY_PIN, INPUT);
   
+  // Initialize power management settings from config
+  originalBrightness = DEFAULT_BRIGHTNESS;
+  brightnessChangeRequested = false;
+  preparingForSleep = false;
+  
   Serial.println(F("Power Manager initialized"));
   Serial.print(F("Battery voltage: ")); Serial.print(batteryVoltage); Serial.println(F("V"));
+  Serial.print(F("Activity timeout: ")); Serial.print(ACTIVITY_TIMEOUT_MINS); Serial.println(F(" minutes"));
 }
 
 float PowerManager::readBatteryVoltage() {
@@ -31,10 +38,9 @@ void PowerManager::update() {
     // Check for low battery condition
     if (batteryVoltage < BATTERY_MIN_VOLTAGE && !lowBatteryMode) {
       lowBatteryMode = true;
-      originalBrightness = FastLED.getBrightness();
       
-      // Instead of directly changing brightness, set a flag
-      requestedBrightness = originalBrightness / 2;
+      // Request low battery brightness mode instead of direct brightness change
+      requestedBrightnessMode = BRIGHTNESS_LOW_BATTERY;
       brightnessChangeRequested = true;
       
       Serial.println(F("Low battery mode activated"));
@@ -42,36 +48,32 @@ void PowerManager::update() {
       // Restore normal operation when voltage is back up
       lowBatteryMode = false;
       
-      // Instead of directly changing brightness, set a flag
-      requestedBrightness = originalBrightness;
+      // Request normal brightness mode
+      requestedBrightnessMode = BRIGHTNESS_NORMAL;
       brightnessChangeRequested = true;
       
       Serial.println(F("Normal power mode restored"));
     }
   }
   
-  // Check for inactivity timeout
-  if (POWER_SAVING_MODE && (millis() - lastActiveTime > SLEEP_AFTER_MINS * 60000)) {
+  // Check for inactivity timeout using the setting from EffectsConfig.h
+  if (POWER_SAVING_MODE && (millis() - lastActiveTime > ACTIVITY_TIMEOUT_MINS * 60000)) {
     // Enter sleep mode to save power
     Serial.println(F("Entering sleep mode"));
     
-    // Fixed issue: Don't use delays and direct FastLED calls 
-    // Instead, request a gradual brightness reduction through LEDController
-    
-    // Set brightness to 0 before sleeping
-    requestedBrightness = 0;
+    // Request sleep brightness mode
+    requestedBrightnessMode = BRIGHTNESS_SLEEP;
     brightnessChangeRequested = true;
     
     // Allow main loop to process the brightness change first
-    // We'll set a flag and check it in the next update call
     preparingForSleep = true;
     sleepPrepStartTime = millis();
   }
   
-  // Handle sleep preparation
+  // Handle sleep preparation with timing from config
   if (preparingForSleep) {
-    // Give system time to process brightness change (1 second)
-    if (millis() - sleepPrepStartTime >= 1000) {
+    // Give system time to process brightness change based on config
+    if (millis() - sleepPrepStartTime >= FADE_TO_SLEEP_DURATION) {
       // Put ESP into deep sleep
       Serial.println(F("Going to deep sleep now"));
       ESP.deepSleep(0);
@@ -101,8 +103,9 @@ bool PowerManager::needsBrightnessChange() {
   return brightnessChangeRequested;
 }
 
-uint8_t PowerManager::getRequestedBrightness() {
-  return requestedBrightness;
+// Updated to use brightness modes instead of direct values
+BrightnessMode PowerManager::getRequestedBrightnessMode() {
+  return requestedBrightnessMode;
 }
 
 void PowerManager::clearBrightnessRequest() {
