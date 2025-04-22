@@ -1,11 +1,26 @@
 #include "BoStaff.h"
 #include "Effects/StrobeEffect.h"
+#include "EffectsConfig.h" // Added include for configuration parameters
 
 StrobeEffect::StrobeEffect(LEDController* ledController, int segmentLen) : 
   ledArray(nullptr), numLedsTotal(0), segmentLength(segmentLen),
-  mode(0), speed(50), duty(10), color(CRGB::White), count(0), 
-  chance(5), active(false), flashMaxBrightness(25), 
+  mode(0), count(0), chance(5), active(false), 
   initialized(false), controller(ledController) {
+  
+  // Initialize values from EffectsConfig.h
+  onTime = STROBE_ON_TIME;
+  offTime = STROBE_OFF_TIME;
+  color = STROBE_COLOR;
+  fadeOut = STROBE_FADE_OUT;
+  fadeRate = STROBE_FADE_RATE;
+  
+  // Calculate speed and duty cycle from on/off times
+  uint16_t totalPeriod = onTime + offTime;
+  speed = map(totalPeriod, 500, 50, 0, 255); // Inverse mapping: shorter period = higher speed
+  duty = (onTime * 100) / totalPeriod;       // Calculate duty cycle as percentage
+  
+  // Set default flash brightness to something reasonable
+  flashMaxBrightness = 25;
   
   // Validate inputs
   if (!ledController) {
@@ -16,7 +31,14 @@ StrobeEffect::StrobeEffect(LEDController* ledController, int segmentLen) :
   ledArray = ledController->getLeds();
   numLedsTotal = NUM_LEDS_TOTAL; // Use the global constant
   initialized = true;
+  
   Serial.println("StrobeEffect initialized with single-strip approach");
+  Serial.print("Strobe Effect Config - On Time: ");
+  Serial.print(onTime);
+  Serial.print(", Off Time: ");
+  Serial.print(offTime);
+  Serial.print(", Fade Out: ");
+  Serial.println(fadeOut ? "Enabled" : "Disabled");
 }
 
 StrobeEffect::~StrobeEffect() {
@@ -36,6 +58,14 @@ void StrobeEffect::setMode(uint8_t m) {
 
 void StrobeEffect::setSpeed(uint8_t s) {
   speed = s;
+  
+  // Recalculate on/off times based on speed
+  uint16_t period = 255 - speed; // Higher speed = shorter period
+  if (period < 10) period = 10;  // Prevent ultra-fast flashing
+  
+  // Preserve duty cycle
+  onTime = (period * duty) / 100;
+  offTime = period - onTime;
 }
 
 void StrobeEffect::setDuty(uint8_t d) {
@@ -43,6 +73,11 @@ void StrobeEffect::setDuty(uint8_t d) {
   if (d < uint8_t(1)) d = 1;
   if (d > uint8_t(99)) d = 99;
   duty = d;
+  
+  // Recalculate on time based on new duty cycle
+  uint16_t period = onTime + offTime;
+  onTime = (period * duty) / 100;
+  offTime = period - onTime;
 }
 
 void StrobeEffect::setColor(CRGB c) {
@@ -91,21 +126,31 @@ void StrobeEffect::update() {
 }
 
 void StrobeEffect::updateClassicStrobe(CRGB flashColor) {
-  // Calculate period based on speed
-  uint16_t period = 255 - speed; // Higher speed = shorter period
+  // Use parameters from EffectsConfig.h to determine strobe timing
   
-  // Use explicit cast for comparison to avoid type mismatch
-  if (period < uint16_t(10)) period = 10;  // Prevent ultra-fast flashing
+  // Calculate period based on onTime and offTime from config
+  uint16_t period = onTime + offTime;
   
-  // Calculate timing
-  uint16_t onTime = (period * duty) / 100;
-  
-  // Determine on/off state
+  // Determine on/off state using onTime
   bool isOn = (count % period) < onTime;
   
   // Apply to all segments
   for (int i = 0; i < segmentLength; i++) {
-    CRGB pixelColor = isOn ? flashColor : CRGB::Black;
+    CRGB pixelColor;
+    
+    if (isOn) {
+      pixelColor = flashColor;
+    } else {
+      // If fade out is enabled, apply progressive dimming
+      if (fadeOut && count % period >= onTime && count % period < (onTime + fadeRate)) {
+        // Calculate fade level (high at start of fade, low at end)
+        uint8_t fadeLevel = 255 - map(count % period - onTime, 0, fadeRate, 0, 255);
+        pixelColor = flashColor;
+        pixelColor.nscale8(fadeLevel);
+      } else {
+        pixelColor = CRGB::Black;
+      }
+    }
     
     // Update all four segments
     controller->getSegment1LED(i) = pixelColor;
@@ -172,7 +217,8 @@ void StrobeEffect::updateLightning() {
     active = true;
   } else if (active) {
     // Decay the lightning effect with afterglow (reduced brightness)
-    uint8_t fade = random8(1, 3);
+    // Use fadeRate from config to control the decay speed
+    uint8_t fade = random8(1, fadeRate / 10 + 1);
     
     for (int segment = 1; segment <= 4; segment++) {
       for (int i = 0; i < segmentLength; i++) {

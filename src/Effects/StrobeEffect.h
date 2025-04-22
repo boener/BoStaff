@@ -24,6 +24,12 @@ private:
   bool initialized;  // Flag to track initialization status
   LEDController* controller; // Pointer to the LED controller for segment access
   
+  // Configuration parameters from EffectsConfig.h
+  uint16_t onTime;    // Time in ms that the strobe is on
+  uint16_t offTime;   // Time in ms that the strobe is off
+  bool fadeOut;       // Whether strobe fades out or cuts off
+  uint8_t fadeRate;   // How quickly strobe fades
+  
 public:
   StrobeEffect(LEDController* ledController, int segmentLen = 100);
   ~StrobeEffect();

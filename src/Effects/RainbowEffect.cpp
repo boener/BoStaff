@@ -1,10 +1,19 @@
 #include "BoStaff.h"
 #include "Effects/RainbowEffect.h"
+#include "EffectsConfig.h" // Added include for configuration parameters
 
 RainbowEffect::RainbowEffect(LEDController* ledController, int segmentLen) : 
   ledArray(nullptr), numLedsTotal(0), segmentLength(segmentLen), 
-  mode(0), hue(0), saturation(240), speed(30), density(50), 
-  initialized(false), controller(ledController) {
+  mode(0), hue(0), initialized(false), controller(ledController) {
+  
+  // Initialize values from EffectsConfig.h
+  speed = RAINBOW_SPEED;
+  deltaHue = RAINBOW_DELTA;
+  saturation = RAINBOW_SATURATION;
+  brightness = RAINBOW_BRIGHTNESS;
+  
+  // Default density for twinkle effect (not in config yet)
+  density = 50;
   
   // Validate inputs
   if (!ledController) {
@@ -15,7 +24,16 @@ RainbowEffect::RainbowEffect(LEDController* ledController, int segmentLen) :
   ledArray = ledController->getLeds();
   numLedsTotal = NUM_LEDS_TOTAL; // Use the global constant
   initialized = true;
+  
   Serial.println("RainbowEffect initialized with single-strip approach");
+  Serial.print("Rainbow Effect Config - Speed: ");
+  Serial.print(speed);
+  Serial.print(", Delta: ");
+  Serial.print(deltaHue);
+  Serial.print(", Saturation: ");
+  Serial.print(saturation);
+  Serial.print(", Brightness: ");
+  Serial.println(brightness);
 }
 
 RainbowEffect::~RainbowEffect() {
@@ -39,6 +57,10 @@ void RainbowEffect::setSaturation(uint8_t s) {
 
 void RainbowEffect::setSpeed(uint8_t s) {
   speed = s;
+}
+
+void RainbowEffect::setDeltaHue(uint8_t delta) {
+  deltaHue = delta;
 }
 
 void RainbowEffect::setDensity(uint8_t d) {
@@ -70,13 +92,13 @@ void RainbowEffect::update() {
       break;
   }
   
-  // Update hue slowly for next frame
+  // Update hue for next frame - use speed from config
   hue += (speed / 4);
 }
 
 void RainbowEffect::updateSmoothCycle() {
   // Fill the entire strip with a single changing color
-  CRGB color = CHSV(hue, saturation, 255);
+  CRGB color = CHSV(hue, saturation, brightness);
   
   // Apply to all segments
   for (int i = 0; i < segmentLength; i++) {
@@ -92,18 +114,19 @@ void RainbowEffect::updateMovingRainbow() {
   // Ensure the pattern flows from center (pos 0) to far end (pos 99)
   
   // Calculate appropriate hue delta to make the pattern continuous
-  uint8_t hueSpread = 128; // Half the color wheel
+  // Use deltaHue from config to determine the "compression" of the rainbow
+  uint8_t hueSpread = 128 * deltaHue / 5; // Scale the delta for a reasonable range
   
   // Update all four segments with flowing rainbow patterns
   for (int i = 0; i < segmentLength; i++) {
     // Map position to hue value (0->center, 99->far end)
     uint8_t hueVal = hue + map(i, 0, segmentLength - 1, 0, hueSpread);
     
-    // Apply to all four segments
-    controller->getSegment1LED(i) = CHSV(hueVal, saturation, 255);
-    controller->getSegment2LED(i) = CHSV(hueVal, saturation, 255);
-    controller->getSegment3LED(i) = CHSV(hueVal, saturation, 255);
-    controller->getSegment4LED(i) = CHSV(hueVal, saturation, 255);
+    // Apply to all four segments using sat and val from config
+    controller->getSegment1LED(i) = CHSV(hueVal, saturation, brightness);
+    controller->getSegment2LED(i) = CHSV(hueVal, saturation, brightness);
+    controller->getSegment3LED(i) = CHSV(hueVal, saturation, brightness);
+    controller->getSegment4LED(i) = CHSV(hueVal, saturation, brightness);
   }
 }
 
@@ -124,7 +147,8 @@ void RainbowEffect::updateRainbowTwinkle() {
       if (random8() < probability) {
         // Position-dependent hue for a more organized look
         uint8_t positionHue = map(i, 0, segmentLength - 1, 0, 128);
-        CRGB color = CHSV(hue + positionHue + random8(64), saturation, 255);
+        // Use saturation and brightness from config
+        CRGB color = CHSV(hue + positionHue + random8(64), saturation, brightness);
         
         // Apply to the correct segment
         switch (segment) {

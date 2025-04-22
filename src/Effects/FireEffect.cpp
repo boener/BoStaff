@@ -22,6 +22,14 @@ FireEffect::FireEffect(LEDController* ledController, int segmentLen) :
     memset(heat, 0, segmentLength * 4);
     initialized = true; // Mark as successfully initialized
     Serial.println("FireEffect initialized with single-strip approach");
+    
+    // Log configuration settings from EffectsConfig.h
+    Serial.print("Fire Effect Config - Cooling: ");
+    Serial.print(FIRE_COOLING);
+    Serial.print(", Sparking: ");
+    Serial.print(FIRE_SPARKING);
+    Serial.print(", Heat Dissipation: ");
+    Serial.println(FIRE_HEAT_DISSIPATION);
   } else {
     Serial.println("ERROR: FireEffect failed to allocate heat arrays");
   }
@@ -92,7 +100,22 @@ void FireEffect::updateSegment(int segmentIndex) {
 
   // Step 4: Map from heat cells to LED colors
   for (int j = 0; j < segmentLength; j++) {
+    // If the base color is defined as FIRE_BASE_COLOR in EffectsConfig.h, we can use it to influence the fire color
+    // Standard HeatColor uses a red-yellow palette, we'll keep that as default
     CRGB color = HeatColor(heat[heatOffset + j]);
+    
+    // Optional: If you want to apply a custom tint based on FIRE_BASE_COLOR, uncomment and adjust this code:
+    /*
+    // Get the base color as a CHSV
+    CHSV baseColorHSV = rgb2hsv_approximate(FIRE_BASE_COLOR);
+    // Blend the heat color with the base color hue
+    // This allows for different color fires (blue, green, etc.)
+    CHSV heatHSV = rgb2hsv_approximate(color);
+    // Shift the hue towards the base color hue
+    heatHSV.hue = lerp8by8(heatHSV.hue, baseColorHSV.hue, 128); // 50% blend
+    // Convert back to RGB
+    color = heatHSV;
+    */
     
     // Use the appropriate segment addressing based on segment index
     switch (segmentIndex) {
