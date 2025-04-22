@@ -105,7 +105,7 @@ void LEDController::update() {
       
       // Use dimmer white (25, 25, 25) instead of full white (255, 255, 255)
       // This ensures the color itself is also dimmer, not just the overall brightness
-      CRGB dimWhite = CRGB(25, 25, 25);
+      CRGB dimWhite = CRGB(175, 175, 175);
       fill_solid(leds, NUM_LEDS_TOTAL, dimWhite);
       
       safeStripRefresh();
