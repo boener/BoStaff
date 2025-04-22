@@ -37,9 +37,16 @@ bool calibrationMode = false;
 unsigned long buttonPressStart = 0;
 bool buttonWasPressed = false;
 
-// I2C and LED timing control variables
+// Timing management for task scheduling
 unsigned long lastAccelUpdate = 0;
-const unsigned long ACCEL_UPDATE_INTERVAL = 25; // Only read accelerometer every 25ms to reduce I2C traffic
+// Increased interval to reduce I2C conflicts (increased from 25ms to 40ms)
+const unsigned long ACCEL_UPDATE_INTERVAL = 40;
+
+// Timing management for better task distribution
+unsigned long lastLEDUpdate = 0;
+const unsigned long LED_UPDATE_INTERVAL = 15; // LED effects update every 15ms
+unsigned long lastPowerUpdate = 0;
+const unsigned long POWER_UPDATE_INTERVAL = 500; // Power check every 500ms
 
 // Function to initialize all effect objects - UPDATED FOR SINGLE STRIP
 void initializeAllEffects() {
@@ -118,8 +125,8 @@ void setup() {
   Serial.print(F("Button: ")); Serial.println(F("D6 (GPIO12)"));
   
   // Initialize I2C for MPU-6050 (uses default pins D1/D2)
-  Wire.begin(SDA_PIN, SCL_PIN);
-  Serial.println(F("I2C initialized"));
+  // Note: Wire.begin is now handled in AccelerometerHandler for better control
+  Serial.println(F("I2C will be initialized by AccelerometerHandler"));
   
   // Load settings from flash
   settingsManager.begin();
@@ -131,11 +138,15 @@ void setup() {
   // Initialize LED controller
   ledController.begin(&config);
   
-  // Initialize accelerometer
-  accelHandler.begin(&config);
-  
   // Initialize power management
   powerManager.begin();
+  
+  // Initialize accelerometer (after other components to avoid I2C conflicts)
+  if (accelHandler.begin(&config)) {
+    Serial.println(F("Accelerometer initialized successfully"));
+  } else {
+    Serial.println(F("WARNING: Accelerometer initialization had issues, will retry in main loop"));
+  }
   
   Serial.println(F("Initializing LED effects for single-strip with four segments:"));
   Serial.println(F("Segment 1: LEDs 0-99 (counts up)"));
@@ -161,8 +172,10 @@ void setup() {
   Serial.println(F("\nTo enter accelerometer calibration mode,"));
   Serial.println(F("hold the button for 5 seconds until all LEDs flash blue."));
   
-  // Initialize loop timing measurement
+  // Initialize loop timing variables
   lastAccelUpdate = millis();
+  lastLEDUpdate = millis();
+  lastPowerUpdate = millis();
 }
 
 void loop() {
@@ -235,10 +248,11 @@ void loop() {
   
   // Skip normal operation while in calibration mode
   if (calibrationMode) {
+    yield(); // Allow watchdog to be fed
     return;
   }
   
-  // Update button state
+  // Update button state - highest priority task
   buttonHandler.handle();
   
   // Check for mode change request from button
@@ -263,92 +277,105 @@ void loop() {
       ledController.triggerImpactEffect();
       powerManager.resetActivityTimer();
     }
+    
+    // Allow time between I2C and LED updates to prevent conflicts
+    yield();
   }
   
-  // Check if PowerManager has requested a brightness change
-  if (powerManager.needsBrightnessChange()) {
-    // Use the new brightness mode system
-    BrightnessMode newMode = powerManager.getRequestedBrightnessMode();
-    
-    // Map the BrightnessMode to LEDController::BrightnessMode
-    LEDController::BrightnessMode ledMode;
-    switch(newMode) {
-      case BRIGHTNESS_NORMAL:
-        ledMode = LEDController::BRIGHTNESS_NORMAL;
+  // Update LED effects on their own schedule
+  if (millis() - lastLEDUpdate >= LED_UPDATE_INTERVAL) {
+    // Update LED effects based on current mode
+    switch (config.currentMode) {
+      case EFFECT_FIRE:
+        if (fireEffect && fireEffect->isInitialized()) {
+          fireEffect->update();
+        } else {
+          // Fallback to a simple effect if fire effect is not available
+          fill_solid(ledController.getLeds(), NUM_LEDS_TOTAL, CRGB::Red);
+        }
         break;
-      case BRIGHTNESS_IMPACT:
-        ledMode = LEDController::BRIGHTNESS_IMPACT;
+        
+      case EFFECT_PULSE:
+        if (pulseEffect && pulseEffect->isInitialized()) {
+          pulseEffect->update();
+        } else {
+          // Fallback effect
+          fill_solid(ledController.getLeds(), NUM_LEDS_TOTAL, CRGB::Blue);
+        }
         break;
-      case BRIGHTNESS_LOW_BATTERY:
-        ledMode = LEDController::BRIGHTNESS_LOW_BATTERY;
+        
+      case EFFECT_RAINBOW:
+        if (rainbowEffect && rainbowEffect->isInitialized()) {
+          rainbowEffect->update();
+        } else {
+          // Fallback effect
+          fill_solid(ledController.getLeds(), NUM_LEDS_TOTAL, CRGB::Green);
+        }
         break;
-      case BRIGHTNESS_SLEEP:
-        ledMode = LEDController::BRIGHTNESS_SLEEP;
+        
+      case EFFECT_STROBE:
+        if (strobeEffect && strobeEffect->isInitialized()) {
+          strobeEffect->update();
+        } else {
+          // Fallback effect
+          fill_solid(ledController.getLeds(), NUM_LEDS_TOTAL, CRGB::White);
+        }
         break;
+        
+      case EFFECT_SOLID:
       default:
-        ledMode = LEDController::BRIGHTNESS_NORMAL;
+        // Solid color effect is handled directly by LED controller
         break;
     }
     
-    // Apply the brightness mode
-    ledController.setBrightnessMode(ledMode);
+    // Update LED strips
+    ledController.update();
     
-    Serial.print("Brightness mode changed via PowerManager to: ");
-    Serial.println(static_cast<int>(newMode)); // Cast to int for readable output
-    
-    // Clear the request flag
-    powerManager.clearBrightnessRequest();
+    lastLEDUpdate = millis();
   }
   
-  // Update LED effects based on current mode
-  switch (config.currentMode) {
-    case EFFECT_FIRE:
-      if (fireEffect && fireEffect->isInitialized()) {
-        fireEffect->update();
-      } else {
-        // Fallback to a simple effect if fire effect is not available
-        fill_solid(ledController.getLeds(), NUM_LEDS_TOTAL, CRGB::Red);
-      }
-      break;
+  // Check power management on a less frequent schedule
+  if (millis() - lastPowerUpdate >= POWER_UPDATE_INTERVAL) {
+    // Update power management
+    powerManager.update();
+    
+    // Check if PowerManager has requested a brightness change
+    if (powerManager.needsBrightnessChange()) {
+      // Use the new brightness mode system
+      BrightnessMode newMode = powerManager.getRequestedBrightnessMode();
       
-    case EFFECT_PULSE:
-      if (pulseEffect && pulseEffect->isInitialized()) {
-        pulseEffect->update();
-      } else {
-        // Fallback effect
-        fill_solid(ledController.getLeds(), NUM_LEDS_TOTAL, CRGB::Blue);
+      // Map the BrightnessMode to LEDController::BrightnessMode
+      LEDController::BrightnessMode ledMode;
+      switch(newMode) {
+        case BRIGHTNESS_NORMAL:
+          ledMode = LEDController::BRIGHTNESS_NORMAL;
+          break;
+        case BRIGHTNESS_IMPACT:
+          ledMode = LEDController::BRIGHTNESS_IMPACT;
+          break;
+        case BRIGHTNESS_LOW_BATTERY:
+          ledMode = LEDController::BRIGHTNESS_LOW_BATTERY;
+          break;
+        case BRIGHTNESS_SLEEP:
+          ledMode = LEDController::BRIGHTNESS_SLEEP;
+          break;
+        default:
+          ledMode = LEDController::BRIGHTNESS_NORMAL;
+          break;
       }
-      break;
       
-    case EFFECT_RAINBOW:
-      if (rainbowEffect && rainbowEffect->isInitialized()) {
-        rainbowEffect->update();
-      } else {
-        // Fallback effect
-        fill_solid(ledController.getLeds(), NUM_LEDS_TOTAL, CRGB::Green);
-      }
-      break;
+      // Apply the brightness mode
+      ledController.setBrightnessMode(ledMode);
       
-    case EFFECT_STROBE:
-      if (strobeEffect && strobeEffect->isInitialized()) {
-        strobeEffect->update();
-      } else {
-        // Fallback effect
-        fill_solid(ledController.getLeds(), NUM_LEDS_TOTAL, CRGB::White);
-      }
-      break;
+      Serial.print("Brightness mode changed via PowerManager to: ");
+      Serial.println(static_cast<int>(newMode)); // Cast to int for readable output
       
-    case EFFECT_SOLID:
-    default:
-      // Solid color effect is handled directly by LED controller
-      break;
+      // Clear the request flag
+      powerManager.clearBrightnessRequest();
+    }
+    
+    lastPowerUpdate = millis();
   }
-  
-  // Update LED strips
-  ledController.update();
-  
-  // Update power management
-  powerManager.update();
   
   // Small delay to prevent watchdog issues
   yield();

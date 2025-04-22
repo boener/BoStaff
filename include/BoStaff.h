@@ -17,6 +17,11 @@
 #define SDA_PIN D2  // GPIO4 - Default I2C data pin
 #define SCL_PIN D1  // GPIO5 - Default I2C clock pin
 
+// I2C timing settings for reliable operation
+#define I2C_CLOCK_SPEED 100000  // 100 kHz standard I2C speed
+#define I2C_TIMEOUT 50          // 50ms timeout for I2C operations
+#define I2C_RETRY_COUNT 3       // Number of times to retry I2C operations
+
 // LED strip configuration - UPDATED FOR SINGLE STRIP
 #define NUM_LEDS_TOTAL 400
 #define NUM_LEDS_SEGMENT 100  // Each of the 4 segments has 100 LEDs
@@ -130,7 +135,7 @@ public:
   bool modeChangeRequested();
 };
 
-// Accelerometer handler class
+// Accelerometer handler class - Enhanced for better I2C timing
 class AccelerometerHandler {
 private:
   Adafruit_MPU6050 mpu;
@@ -140,17 +145,29 @@ private:
   unsigned long lastImpactTime;
   unsigned long impactCooldown;
   
-  // Helper method for calibration
+  // I2C management variables
+  byte consecutiveErrors;
+  unsigned long lastRecoveryAttempt;
+  
+  // Helper methods
   void waitForButtonPress();
+  bool setupMPU();          // Separate MPU setup method for better error handling
+  bool readMPUData(sensors_event_t* a, sensors_event_t* g, sensors_event_t* temp); // Enhanced I2C read method
+  bool recoverI2C();        // I2C recovery method in case of errors
   
 public:
   AccelerometerHandler() : mpuInitialized(false), impactDetectedFlag(false), 
-                           lastImpactTime(0), impactCooldown(500) {}
+                         lastImpactTime(0), impactCooldown(500),
+                         consecutiveErrors(0), lastRecoveryAttempt(0) {}
   
   bool begin(Config* cfg);
   void update();
   bool impactDetected();
   void calibrate();
+  
+  // Status methods
+  bool isInitialized() const { return mpuInitialized; }
+  byte getErrorCount() const { return consecutiveErrors; }
 };
 
 // Settings manager class for storing configuration in flash

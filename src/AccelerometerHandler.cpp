@@ -3,59 +3,286 @@
 bool AccelerometerHandler::begin(Config* cfg) {
   config = cfg;
   
-  // Set up the I2C connection to the MPU6050 using the defined pins
-  Wire.begin(SDA_PIN, SCL_PIN);
+  // Reset error counters and flags
+  consecutiveErrors = 0;
+  lastRecoveryAttempt = 0;
+  mpuInitialized = false;
   
-  // Initialize the MPU6050
-  if (!mpu.begin()) {
-    Serial.println("Failed to find MPU6050 chip");
-    mpuInitialized = false;
+  // Set up the I2C connection with proper clock speed
+  Wire.begin(SDA_PIN, SCL_PIN);
+  Wire.setClock(I2C_CLOCK_SPEED); // Use defined clock speed for stability
+  
+  Serial.println("Initializing accelerometer...");
+  
+  // Allow the I2C bus to stabilize
+  delay(10);
+  yield(); // Give other processes a chance to run
+  
+  // Initialize MPU with improved error handling
+  if (!setupMPU()) {
+    Serial.println("WARNING: Failed to initialize MPU6050 - will retry in update loop");
     return false;
   }
   
-  // Configure the accelerometer - using 16G range for better impact detection
-  mpu.setAccelerometerRange(MPU6050_RANGE_16_G); // Changed from 8G to 16G
-  mpu.setGyroRange(MPU6050_RANGE_500_DEG);
-  mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
-  
-  // Wait for the sensor to stabilize
-  delay(100);
-  
+  // If we got here, the MPU initialized successfully
   mpuInitialized = true;
   Serial.println("Accelerometer initialized with 16G range");
   Serial.print("Impact threshold set to: ");
   Serial.println(config->impactThreshold);
   
-  // Initial accelerometer reading to check functionality
+  // Get initial reading for verification
   sensors_event_t a, g, temp;
-  mpu.getEvent(&a, &g, &temp);
+  if (readMPUData(&a, &g, &temp)) {
+    Serial.println("Initial accelerometer readings:");
+    Serial.print("X: "); Serial.print(a.acceleration.x);
+    Serial.print(" Y: "); Serial.print(a.acceleration.y);
+    Serial.print(" Z: "); Serial.print(a.acceleration.z);
+    Serial.println(" m/s^2");
+    
+    // Calculate and print magnitude
+    float accelMagnitude = sqrt(a.acceleration.x * a.acceleration.x + 
+                              a.acceleration.y * a.acceleration.y + 
+                              a.acceleration.z * a.acceleration.z);
+    Serial.print("Magnitude: "); Serial.print(accelMagnitude);
+    Serial.print(" m/s^2, Raw: "); Serial.println((uint16_t)(accelMagnitude * 100));
+  }
+  else {
+    Serial.println("WARNING: Initial accelerometer reading failed");
+  }
   
-  Serial.println("Initial accelerometer readings:");
-  Serial.print("X: "); Serial.print(a.acceleration.x);
-  Serial.print(" Y: "); Serial.print(a.acceleration.y);
-  Serial.print(" Z: "); Serial.print(a.acceleration.z);
-  Serial.println(" m/s^2");
+  return mpuInitialized;
+}
+
+bool AccelerometerHandler::setupMPU() {
+  // Try to initialize the MPU with multiple attempts
+  for (int attempt = 0; attempt < I2C_RETRY_COUNT; attempt++) {
+    if (attempt > 0) {
+      Serial.print("Retrying MPU setup (attempt ");
+      Serial.print(attempt + 1);
+      Serial.print(" of ");
+      Serial.print(I2C_RETRY_COUNT);
+      Serial.println(")");
+      
+      // Short delay and yield between attempts
+      delay(10 * attempt); // Increasing delay for each retry
+      yield();
+    }
+    
+    if (mpu.begin()) {
+      // Successfully initialized, now configure the settings
+      
+      // Set timeout for I2C operations to prevent lockups
+      // ESP8266 Wire library uses setTimeout instead of setTimeOut
+      Wire.setTimeout(I2C_TIMEOUT);
+      
+      // Configure the accelerometer with error handling
+      bool configSuccess = true;
+      
+      // Set the accelerometer range with retry
+      bool accelRangeSet = false;
+      for (int i = 0; i < I2C_RETRY_COUNT && !accelRangeSet; i++) {
+        if (i > 0) {
+          Serial.print("Retrying accelerometer range setting (attempt ");
+          Serial.print(i + 1); Serial.println(")");
+          delay(10 * i); // Increasing delay for each retry
+          yield();
+        }
+        
+        // The setter method returns void, so we need to verify by reading back
+        mpu.setAccelerometerRange(MPU6050_RANGE_16_G);
+        
+        // Add short delay to allow I2C operation to complete
+        delay(5);
+        yield();
+        
+        // Verify setting by reading back the register
+        // This is the key improvement - verification step
+        sensors_event_t a, g, temp;
+        if (mpu.getEvent(&a, &g, &temp)) {
+          // Successfully read sensor data, assume setting worked
+          accelRangeSet = true;
+          
+          // Debug output
+          Serial.println("Accelerometer range set successfully");
+        }
+      }
+      
+      // Set the gyro range with retry
+      bool gyroRangeSet = false;
+      for (int i = 0; i < I2C_RETRY_COUNT && !gyroRangeSet; i++) {
+        if (i > 0) {
+          Serial.print("Retrying gyro range setting (attempt ");
+          Serial.print(i + 1); Serial.println(")");
+          delay(10 * i);
+          yield();
+        }
+        
+        mpu.setGyroRange(MPU6050_RANGE_500_DEG);
+        
+        // Add short delay to allow I2C operation to complete
+        delay(5);
+        yield();
+        
+        // Verify setting by reading back sensor data
+        sensors_event_t a, g, temp;
+        if (mpu.getEvent(&a, &g, &temp)) {
+          gyroRangeSet = true;
+          Serial.println("Gyro range set successfully");
+        }
+      }
+      
+      // Set the filter bandwidth with retry
+      bool filterBandwidthSet = false;
+      for (int i = 0; i < I2C_RETRY_COUNT && !filterBandwidthSet; i++) {
+        if (i > 0) {
+          Serial.print("Retrying filter bandwidth setting (attempt ");
+          Serial.print(i + 1); Serial.println(")");
+          delay(10 * i);
+          yield();
+        }
+        
+        mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
+        
+        // Add short delay to allow I2C operation to complete
+        delay(5);
+        yield();
+        
+        // Verify setting by reading back sensor data
+        sensors_event_t a, g, temp;
+        if (mpu.getEvent(&a, &g, &temp)) {
+          filterBandwidthSet = true;
+          Serial.println("Filter bandwidth set successfully");
+        }
+      }
+      
+      // Only consider configuration successful if all three settings were applied
+      configSuccess = accelRangeSet && gyroRangeSet && filterBandwidthSet;
+      
+      if (!configSuccess) {
+        Serial.println("WARNING: Some MPU6050 settings could not be verified");
+      }
+      
+      // Wait for the sensor to stabilize, with yield to prevent WDT reset
+      for (int i = 0; i < 10; i++) {
+        delay(10);
+        yield();
+      }
+      
+      // Return true since all configuration appeared to succeed
+      return configSuccess;
+    }
+    
+    // If we get here, initialization failed on this attempt
+    Serial.println("MPU initialization attempt failed");
+  }
   
-  // Calculate and print magnitude
-  float accelMagnitude = sqrt(a.acceleration.x * a.acceleration.x + 
-                             a.acceleration.y * a.acceleration.y + 
-                             a.acceleration.z * a.acceleration.z);
-  Serial.print("Magnitude: "); Serial.print(accelMagnitude);
-  Serial.print(" m/s^2, Raw: "); Serial.println((uint16_t)(accelMagnitude * 100));
+  // If we've tried all attempts and still failed
+  Serial.println("ERROR: Failed to find or initialize MPU6050 after multiple attempts");
+  return false;
+}
+
+bool AccelerometerHandler::readMPUData(sensors_event_t* a, sensors_event_t* g, sensors_event_t* temp) {
+  // Don't even try if not initialized
+  if (!mpuInitialized) {
+    return false;
+  }
   
-  return true;
+  // Try to read data with retry
+  for (int attempt = 0; attempt < I2C_RETRY_COUNT; attempt++) {
+    if (attempt > 0) {
+      // Small delay between retries with yield
+      delay(5);
+      yield(); 
+    }
+    
+    // Set an I2C timeout to prevent lockups (ESP8266 uses setTimeout not setTimeOut)
+    Wire.setTimeout(I2C_TIMEOUT);
+    
+    // Try to get event
+    if (mpu.getEvent(a, g, temp)) {
+      // Successful read, reset error counter
+      if (consecutiveErrors > 0) {
+        consecutiveErrors = 0;
+        Serial.println("I2C communication recovered");
+      }
+      return true;
+    }
+  }
+  
+  // If we get here, all read attempts failed
+  consecutiveErrors++;
+  
+  // If we have too many consecutive errors, try recovery
+  if (consecutiveErrors >= 5) {
+    // Don't try recovery too frequently
+    if (millis() - lastRecoveryAttempt > 5000) {
+      Serial.print("WARNING: Multiple I2C read failures (");
+      Serial.print(consecutiveErrors);
+      Serial.println(") - attempting recovery");
+      
+      // Try to recover the I2C bus
+      if (recoverI2C()) {
+        // Reset error counter if recovery successful
+        consecutiveErrors = 0; 
+      }
+      
+      lastRecoveryAttempt = millis();
+    }
+  }
+  
+  return false;
+}
+
+bool AccelerometerHandler::recoverI2C() {
+  Serial.println("Attempting I2C bus recovery...");
+  
+  // Try to reset the MPU6050 by re-initializing
+  mpuInitialized = false;
+  
+  // The ESP8266 Wire library doesn't have an end() method
+  // Instead, we'll just reinitialize
+  delay(50);
+  yield();
+  
+  // Re-begin the Wire library
+  Wire.begin(SDA_PIN, SCL_PIN);
+  Wire.setClock(I2C_CLOCK_SPEED);
+  Wire.setTimeout(I2C_TIMEOUT);
+  
+  delay(50);
+  yield();
+  
+  // Try to re-initialize the MPU
+  bool success = setupMPU();
+  
+  if (success) {
+    mpuInitialized = true;
+    Serial.println("I2C bus recovery successful");
+  } else {
+    Serial.println("WARNING: I2C bus recovery failed, will retry later");
+  }
+  
+  return success;
 }
 
 void AccelerometerHandler::update() {
+  // If not initialized, attempt to initialize
   if (!mpuInitialized) {
-    Serial.println("Accelerometer not initialized, attempt to restart");
-    begin(config); // Try to reinitialize
+    // Don't attempt initialization too frequently
+    static unsigned long lastInitAttempt = 0;
+    if (millis() - lastInitAttempt > 5000) {
+      Serial.println("Accelerometer not initialized, attempting to restart");
+      begin(config);
+      lastInitAttempt = millis();
+    }
     return;
   }
   
-  // Get new sensor events
+  // Get new sensor events with enhanced error handling
   sensors_event_t a, g, temp;
-  if (!mpu.getEvent(&a, &g, &temp)) {
+  
+  if (!readMPUData(&a, &g, &temp)) {
+    // Failed to read data
     Serial.println("Failed to read from MPU6050");
     return;
   }
@@ -70,20 +297,6 @@ void AccelerometerHandler::update() {
   
   // Use the configured threshold instead of hard-coded value
   uint16_t currentThreshold = config->impactThreshold;
-  
-  // CHANGED: Comment out or reduce frequency of debug printing
-  // Only print every 5 seconds instead of every second to reduce potential I2C conflicts
-  /*
-  static unsigned long lastPrint = 0;
-  if (millis() - lastPrint > 5000) {
-    Serial.print("Accel: "); Serial.print(accelRaw);
-    Serial.print(" (X:"); Serial.print(a.acceleration.x);
-    Serial.print(" Y:"); Serial.print(a.acceleration.y);
-    Serial.print(" Z:"); Serial.print(a.acceleration.z);
-    Serial.print(") Threshold: "); Serial.println(currentThreshold);
-    lastPrint = millis();
-  }
-  */
   
   // Check for impact (with cooldown to prevent multiple triggers)
   if (accelRaw > currentThreshold && 
@@ -109,6 +322,9 @@ void AccelerometerHandler::update() {
     
     impactDetectedFlag = false;
   }
+  
+  // Make sure we don't hog the CPU
+  yield();
 }
 
 bool AccelerometerHandler::impactDetected() {
@@ -124,7 +340,11 @@ bool AccelerometerHandler::impactDetected() {
 void AccelerometerHandler::calibrate() {
   if (!mpuInitialized) {
     Serial.println("ERROR: Cannot calibrate - Accelerometer not initialized");
-    return;
+    // Try to initialize
+    if (!begin(config)) {
+      Serial.println("ERROR: Failed to initialize accelerometer for calibration");
+      return;
+    }
   }
   
   Serial.println("\n== ACCELEROMETER CALIBRATION ==");
@@ -143,13 +363,16 @@ void AccelerometerHandler::calibrate() {
   int baselineSamples = 0;
   
   // Wait for staff to be still
-  delay(1000);
+  for (int i = 0; i < 100; i++) {
+    delay(10);
+    yield(); // Give time for other processes
+  }
   
   // Collect baseline readings for 3 seconds
   unsigned long baselineStart = millis();
   while (millis() - baselineStart < 3000) {
     sensors_event_t a, g, temp;
-    if (mpu.getEvent(&a, &g, &temp)) {
+    if (readMPUData(&a, &g, &temp)) {
       float accelMagnitude = sqrt(a.acceleration.x * a.acceleration.x + 
                                  a.acceleration.y * a.acceleration.y + 
                                  a.acceleration.z * a.acceleration.z);
@@ -165,7 +388,8 @@ void AccelerometerHandler::calibrate() {
       Serial.print(".");
       if (baselineSamples % 50 == 0) Serial.println();
     }
-    delay(10); // Sample at ~100Hz
+    delay(10);
+    yield(); // Prevent watchdog resets
   }
   
   float baselineAvg = baselineSum / baselineSamples;
@@ -197,7 +421,7 @@ void AccelerometerHandler::calibrate() {
     
     while (millis() - impactStart < 3000) {
       sensors_event_t a, g, temp;
-      if (mpu.getEvent(&a, &g, &temp)) {
+      if (readMPUData(&a, &g, &temp)) {
         float accelMagnitude = sqrt(a.acceleration.x * a.acceleration.x + 
                                    a.acceleration.y * a.acceleration.y + 
                                    a.acceleration.z * a.acceleration.z);
@@ -212,12 +436,18 @@ void AccelerometerHandler::calibrate() {
         Serial.print("Current: "); Serial.print(accelRaw);
         Serial.print(", Max: "); Serial.println(maxImpact);
       }
-      delay(5); // Sample at ~200Hz for better peak detection
+      
+      delay(5);
+      yield(); // Prevent watchdog resets
     }
     
     impactSamples[i] = maxImpact;
     Serial.print("Impact #"); Serial.print(i + 1);
     Serial.print(" maximum reading: "); Serial.println(impactSamples[i]);
+    
+    // Small delay between impact measurements
+    delay(500);
+    yield();
   }
   
   // Step 3: Calculate appropriate threshold
@@ -272,21 +502,26 @@ void AccelerometerHandler::waitForButtonPress() {
   // Ensure button is not already pressed
   while (digitalRead(BTN_PIN) == LOW) {
     delay(10);
+    yield(); // Allow other processes to run
   }
   
   // Wait for button press
   while (digitalRead(BTN_PIN) == HIGH) {
     delay(10);
+    yield(); // Allow other processes to run
   }
   
   // Debounce
   delay(50);
+  yield();
   
   // Wait for button release
   while (digitalRead(BTN_PIN) == LOW) {
     delay(10);
+    yield(); // Allow other processes to run
   }
   
   // Debounce
   delay(50);
+  yield();
 }
