@@ -150,6 +150,7 @@ private:
   unsigned long lastRecoveryAttempt;
   
   // Helper methods
+  void configureI2C();      // New centralized I2C configuration method
   void waitForButtonPress();
   bool setupMPU();          // Separate MPU setup method for better error handling
   bool readMPUData(sensors_event_t* a, sensors_event_t* g, sensors_event_t* temp); // Enhanced I2C read method

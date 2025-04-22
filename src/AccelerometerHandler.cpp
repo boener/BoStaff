@@ -1,5 +1,24 @@
 #include "BoStaff.h"
 
+// New centralized I2C configuration method
+void AccelerometerHandler::configureI2C() {
+  // Set up the I2C connection with proper clock speed
+  Wire.begin(SDA_PIN, SCL_PIN);
+  Wire.setClock(I2C_CLOCK_SPEED);
+  
+  // Set timeout for I2C operations to prevent lockups
+  // ESP8266 Wire library uses setTimeout instead of setTimeOut
+  Wire.setTimeout(I2C_TIMEOUT);
+  
+  // Small delay to allow I2C bus to stabilize
+  delay(5);
+  yield();
+  
+  Serial.println("I2C bus configured with:");
+  Serial.print("  Clock: "); Serial.print(I2C_CLOCK_SPEED); Serial.println(" Hz");
+  Serial.print("  Timeout: "); Serial.print(I2C_TIMEOUT); Serial.println(" ms");
+}
+
 bool AccelerometerHandler::begin(Config* cfg) {
   config = cfg;
   
@@ -8,9 +27,8 @@ bool AccelerometerHandler::begin(Config* cfg) {
   lastRecoveryAttempt = 0;
   mpuInitialized = false;
   
-  // Set up the I2C connection with proper clock speed
-  Wire.begin(SDA_PIN, SCL_PIN);
-  Wire.setClock(I2C_CLOCK_SPEED); // Use defined clock speed for stability
+  // Configure I2C with centralized method
+  configureI2C();
   
   Serial.println("Initializing accelerometer...");
   
@@ -66,14 +84,14 @@ bool AccelerometerHandler::setupMPU() {
       // Short delay and yield between attempts
       delay(10 * attempt); // Increasing delay for each retry
       yield();
+      
+      // Reconfigure I2C bus before retry
+      configureI2C();
     }
     
     if (mpu.begin()) {
       // Successfully initialized, now configure the settings
-      
-      // Set timeout for I2C operations to prevent lockups
-      // ESP8266 Wire library uses setTimeout instead of setTimeOut
-      Wire.setTimeout(I2C_TIMEOUT);
+      // (I2C is already configured by configureI2C())
       
       // Configure the accelerometer with error handling
       bool configSuccess = true;
@@ -193,10 +211,10 @@ bool AccelerometerHandler::readMPUData(sensors_event_t* a, sensors_event_t* g, s
       // Small delay between retries with yield
       delay(5);
       yield(); 
+      
+      // Ensure I2C timeout is set for each attempt
+      Wire.setTimeout(I2C_TIMEOUT);
     }
-    
-    // Set an I2C timeout to prevent lockups (ESP8266 uses setTimeout not setTimeOut)
-    Wire.setTimeout(I2C_TIMEOUT);
     
     // Try to get event
     if (mpu.getEvent(a, g, temp)) {
@@ -244,10 +262,8 @@ bool AccelerometerHandler::recoverI2C() {
   delay(50);
   yield();
   
-  // Re-begin the Wire library
-  Wire.begin(SDA_PIN, SCL_PIN);
-  Wire.setClock(I2C_CLOCK_SPEED);
-  Wire.setTimeout(I2C_TIMEOUT);
+  // Reconfigure the I2C bus using centralized method
+  configureI2C();
   
   delay(50);
   yield();
