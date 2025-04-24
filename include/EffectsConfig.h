@@ -21,7 +21,7 @@
 #define IMPACT_FLASH_DURATION 100     // Duration of impact flash in milliseconds
 #define IMPACT_THRESHOLD 1600         // Default impact detection threshold (~1.6G)
 #define IMPACT_COOLDOWN 500           // Minimum time between impacts in milliseconds
-#define IMPACT_COLOR CRGB(175, 175, 175) // Color of the impact flash (dimmed white)
+#define IMPACT_COLOR CRGB::BlueViolet // Color of the impact flash (dimmed white)
 #define IMPACT_FADE_OUT true          // Whether to fade out after impact (true) or cut off (false)
 #define IMPACT_FADE_RATE 10           // How quickly impact effect fades (higher = faster fade)
 
