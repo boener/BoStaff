@@ -93,8 +93,9 @@ void PulseEffect::update() {
 
 void PulseEffect::updateSegment(int segmentIndex) {
   for (int i = 0; i < segmentLength; i++) {
-    // Calculate distance from center (0 = center/hilt, 99 = far end)
-    uint8_t distanceFromCenter = i;
+    // Calculate distance from end (0 = far end, 99 = center/hilt)
+    // MODIFIED: Reversed to make pulses go from center to ends
+    uint8_t distanceFromCenter = (segmentLength - 1) - i;
     
     // Create multiple sine waves with different frequencies
     // Creates a pulse that travels outward from the center
