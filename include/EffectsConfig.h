@@ -9,9 +9,21 @@
 
 // Global brightness settings (0-255)
 #define DEFAULT_BRIGHTNESS 45         // Normal operating brightness
-#define IMPACT_BRIGHTNESS 150         // Brightness when impact detected
 #define LOW_BATTERY_BRIGHTNESS 25     // Brightness when battery is low
 #define DIM_BEFORE_SLEEP 5            // Dim level before going to sleep
+
+// ---------------------------------------------------------------------------
+// IMPACT EFFECT SETTINGS
+// ---------------------------------------------------------------------------
+
+// Impact detection and effect settings
+#define IMPACT_BRIGHTNESS 150         // Brightness when impact detected (0-255)
+#define IMPACT_FLASH_DURATION 100     // Duration of impact flash in milliseconds
+#define IMPACT_THRESHOLD 1600         // Default impact detection threshold (~1.6G)
+#define IMPACT_COOLDOWN 500           // Minimum time between impacts in milliseconds
+#define IMPACT_COLOR CRGB(175, 175, 175) // Color of the impact flash (dimmed white)
+#define IMPACT_FADE_OUT true          // Whether to fade out after impact (true) or cut off (false)
+#define IMPACT_FADE_RATE 10           // How quickly impact effect fades (higher = faster fade)
 
 // ---------------------------------------------------------------------------
 // FIRE EFFECT SETTINGS
@@ -95,11 +107,11 @@
 
 // Strobe effect creates a flashing strobe light
 #define STROBE_ON_TIME 2              // Counts the strobe is ON, about 15ms each
-#define STROBE_OFF_TIME 3             // Counts the strobe is OFF, about 15ms each
+#define STROBE_OFF_TIME 2             // Counts the strobe is OFF, about 15ms each
 #define STROBE_COLOR CRGB::White      // Color of strobe effect
 #define STROBE_FADE_OUT true          // Whether strobe fades out (true) or cuts off (false)
 #define STROBE_FADE_RATE 1            // How quickly strobe fades (higher = faster fade)
-#define STROBE_BRIGHTNESS 150         // Brightness of the strobe effect (0-255)
+#define STROBE_BRIGHTNESS 200         // Brightness of the strobe effect (0-255)
 
 // ---------------------------------------------------------------------------
 // SOLID COLOR EFFECT SETTINGS

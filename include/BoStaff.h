@@ -44,8 +44,10 @@ struct Config {
   uint8_t brightness = DEFAULT_BRIGHTNESS;            // Default from config
   uint8_t impactBrightness = IMPACT_BRIGHTNESS;     // From config
   uint8_t numModes = NUM_EFFECTS;      // Number of available modes
-  uint16_t impactThreshold = 1600;     // ~1.6G acceleration
-  uint16_t impactFlashDuration = 100;  // Duration of impact flash in ms
+  uint16_t impactThreshold = IMPACT_THRESHOLD;     // Default from config
+  uint16_t impactFlashDuration = IMPACT_FLASH_DURATION;  // Duration of impact flash from config
+  bool impactFadeOut = IMPACT_FADE_OUT;  // Whether to fade out after impact
+  uint8_t impactFadeRate = IMPACT_FADE_RATE;  // How quickly impact fades
 };
 
 // Global BrightnessMode enum that can be used by multiple classes
@@ -158,7 +160,7 @@ private:
   
 public:
   AccelerometerHandler() : mpuInitialized(false), impactDetectedFlag(false), 
-                         lastImpactTime(0), impactCooldown(500),
+                         lastImpactTime(0), impactCooldown(IMPACT_COOLDOWN),
                          consecutiveErrors(0), lastRecoveryAttempt(0) {}
   
   bool begin(Config* cfg);

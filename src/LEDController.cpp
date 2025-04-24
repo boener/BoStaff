@@ -100,13 +100,33 @@ void LEDController::update() {
       fill_solid(leds, NUM_LEDS_TOTAL, CRGB::Black);
       safeStripRefresh();
     } else {
-      // Show impact effect (dim white flash)
+      // Show impact effect with configured color
       FastLED.setBrightness(config->impactBrightness); // Use the impact-specific brightness
       
-      // Use dimmer white (25, 25, 25) instead of full white (255, 255, 255)
-      // This ensures the color itself is also dimmer, not just the overall brightness
-      CRGB dimWhite = CRGB(175, 175, 175);
-      fill_solid(leds, NUM_LEDS_TOTAL, dimWhite);
+      // If fade out is enabled, calculate the fade level
+      if (config->impactFadeOut) {
+        // Calculate how far we are through the impact flash duration
+        unsigned long elapsedTime = currentMillis - impactEffectStart;
+        float progress = (float)elapsedTime / config->impactFlashDuration;
+        
+        // Apply fade based on progress and fade rate
+        // Higher fade rate means faster fade
+        if (progress > 0.5) { // Start fading after half the duration
+          float fadeAmount = (progress - 0.5) * 2.0 * config->impactFadeRate;
+          fadeAmount = constrain(fadeAmount, 0.0, 1.0);
+          
+          // Create a faded version of the impact color
+          CRGB fadedColor = IMPACT_COLOR;
+          fadedColor.fadeToBlackBy(fadeAmount * 255);
+          fill_solid(leds, NUM_LEDS_TOTAL, fadedColor);
+        } else {
+          // First half of the effect uses full impact color
+          fill_solid(leds, NUM_LEDS_TOTAL, IMPACT_COLOR);
+        }
+      } else {
+        // No fade, just use the impact color
+        fill_solid(leds, NUM_LEDS_TOTAL, IMPACT_COLOR);
+      }
       
       safeStripRefresh();
       return; // Don't run other effects during impact
