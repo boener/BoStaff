@@ -27,6 +27,8 @@ FireEffect* fireEffect = nullptr;
 FireEffect1* fireEffect1 = nullptr;
 FireEffect2* fireEffect2 = nullptr;
 PulseEffect* pulseEffect = nullptr;
+PulseEffect1* pulseEffect1 = nullptr;  // Added for new pulse effect variant
+PulseEffect2* pulseEffect2 = nullptr;  // Added for new pulse effect variant
 RainbowEffect* rainbowEffect = nullptr;
 StrobeEffect* strobeEffect = nullptr;
 
@@ -57,6 +59,8 @@ void initializeAllEffects() {
   if (fireEffect1) delete fireEffect1;
   if (fireEffect2) delete fireEffect2;
   if (pulseEffect) delete pulseEffect;
+  if (pulseEffect1) delete pulseEffect1;  // Delete new pulse effect if exists
+  if (pulseEffect2) delete pulseEffect2;  // Delete new pulse effect if exists
   if (rainbowEffect) delete rainbowEffect;
   if (strobeEffect) delete strobeEffect;
   
@@ -65,6 +69,8 @@ void initializeAllEffects() {
   fireEffect1 = nullptr;
   fireEffect2 = nullptr;
   pulseEffect = nullptr;
+  pulseEffect1 = nullptr;  // Reset pointer to null
+  pulseEffect2 = nullptr;  // Reset pointer to null
   rainbowEffect = nullptr;
   strobeEffect = nullptr;
   
@@ -100,6 +106,22 @@ void initializeAllEffects() {
   
   if (!pulseEffect || !pulseEffect->isInitialized()) {
     Serial.println(F("Error initializing PulseEffect!"));
+    allEffectsInitialized = false;
+  }
+  
+  // Try to create PulseEffect1 instance
+  pulseEffect1 = new PulseEffect1(&ledController);
+  
+  if (!pulseEffect1 || !pulseEffect1->isInitialized()) {
+    Serial.println(F("Error initializing PulseEffect1!"));
+    allEffectsInitialized = false;
+  }
+  
+  // Try to create PulseEffect2 instance
+  pulseEffect2 = new PulseEffect2(&ledController);
+  
+  if (!pulseEffect2 || !pulseEffect2->isInitialized()) {
+    Serial.println(F("Error initializing PulseEffect2!"));
     allEffectsInitialized = false;
   }
   
@@ -341,6 +363,24 @@ void loop() {
         } else {
           // Fallback effect
           fill_solid(ledController.getLeds(), NUM_LEDS_TOTAL, CRGB::Blue);
+        }
+        break;
+        
+      case EFFECT_PULSE1:  // New pulse effect variant
+        if (pulseEffect1 && pulseEffect1->isInitialized()) {
+          pulseEffect1->update();
+        } else {
+          // Fallback effect
+          fill_solid(ledController.getLeds(), NUM_LEDS_TOTAL, CRGB::Green);
+        }
+        break;
+        
+      case EFFECT_PULSE2:  // New pulse effect variant
+        if (pulseEffect2 && pulseEffect2->isInitialized()) {
+          pulseEffect2->update();
+        } else {
+          // Fallback effect
+          fill_solid(ledController.getLeds(), NUM_LEDS_TOTAL, CRGB::Red);
         }
         break;
         

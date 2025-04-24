@@ -9,6 +9,8 @@ class LEDController;
 #include "../src/Effects/FireEffect1.h"
 #include "../src/Effects/FireEffect2.h"
 #include "../src/Effects/PulseEffect.h"
+#include "../src/Effects/PulseEffect1.h"
+#include "../src/Effects/PulseEffect2.h"
 #include "../src/Effects/RainbowEffect.h"
 #include "../src/Effects/StrobeEffect.h"
 
@@ -19,8 +21,10 @@ enum EffectType {
   EFFECT_FIRE1 = 2,
   EFFECT_FIRE2 = 3,
   EFFECT_PULSE = 4,
-  EFFECT_RAINBOW = 5,
-  EFFECT_STROBE = 6,
+  EFFECT_PULSE1 = 5,
+  EFFECT_PULSE2 = 6,
+  EFFECT_RAINBOW = 7,
+  EFFECT_STROBE = 8,
   NUM_EFFECTS
 };
 

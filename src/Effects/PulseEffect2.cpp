@@ -1,28 +1,28 @@
 #include "BoStaff.h"
-#include "Effects/PulseEffect.h"
+#include "Effects/PulseEffect2.h"
 #include "EffectsConfig.h" // Added include for configuration parameters
 
-PulseEffect::PulseEffect(LEDController* ledController, int segmentLen) : 
+PulseEffect2::PulseEffect2(LEDController* ledController, int segmentLen) : 
   ledArray(nullptr), numLedsTotal(0), segmentLength(segmentLen), 
   baseHue(0), initialized(false), controller(ledController) {
   
-  // Initialize values from EffectsConfig.h
-  speed = PULSE_SPEED;
-  pulseWidth = PULSE_WIDTH;
-  fadeRate = PULSE_FADE_RATE;
-  minBrightness = PULSE_MIN_BRIGHTNESS;
-  maxBrightness = PULSE_MAX_BRIGHTNESS;
+  // Initialize values from EffectsConfig.h - we'll use PULSE2 configurations
+  speed = PULSE2_SPEED;
+  pulseWidth = PULSE2_WIDTH;
+  fadeRate = PULSE2_FADE_RATE;
+  minBrightness = PULSE2_MIN_BRIGHTNESS;
+  maxBrightness = PULSE2_MAX_BRIGHTNESS;
   
-  // Extract hue from PULSE_COLOR for base color
-  CHSV pulseColorHSV = rgb2hsv_approximate(PULSE_COLOR);
+  // Extract hue from PULSE2_COLOR for base color
+  CHSV pulseColorHSV = rgb2hsv_approximate(PULSE2_COLOR);
   baseHue = pulseColorHSV.hue;
   
-  // Default to 1 wave
+  // Default to 1 wave (simplified to match original PulseEffect)
   waveCount = 1;
   
   // Validate inputs
   if (!ledController) {
-    Serial.println("ERROR: PulseEffect created with invalid parameters");
+    Serial.println("ERROR: PulseEffect2 created with invalid parameters");
     return;
   }
   
@@ -30,8 +30,8 @@ PulseEffect::PulseEffect(LEDController* ledController, int segmentLen) :
   numLedsTotal = NUM_LEDS_TOTAL; // Use the global constant
   initialized = true;
   
-  Serial.println("PulseEffect initialized with single-strip approach");
-  Serial.print("Pulse Effect Config - Speed: ");
+  Serial.println("PulseEffect2 initialized with single-strip approach");
+  Serial.print("Pulse Effect2 Config - Speed: ");
   Serial.print(speed);
   Serial.print(", Width: ");
   Serial.print(pulseWidth);
@@ -39,41 +39,41 @@ PulseEffect::PulseEffect(LEDController* ledController, int segmentLen) :
   Serial.println(baseHue);
 }
 
-PulseEffect::~PulseEffect() {
+PulseEffect2::~PulseEffect2() {
   // No dynamic memory to free, but we still need to reset state
   initialized = false;
   ledArray = nullptr; // Don't delete ledArray as it's managed elsewhere
   controller = nullptr;
 }
 
-bool PulseEffect::isInitialized() const {
+bool PulseEffect2::isInitialized() const {
   return initialized && ledArray != nullptr && controller != nullptr;
 }
 
-void PulseEffect::setHue(uint8_t newHue) {
+void PulseEffect2::setHue(uint8_t newHue) {
   baseHue = newHue;
 }
 
-void PulseEffect::setSpeed(uint8_t newSpeed) {
+void PulseEffect2::setSpeed(uint8_t newSpeed) {
   speed = newSpeed;
 }
 
-void PulseEffect::setPulseWidth(uint8_t width) {
+void PulseEffect2::setPulseWidth(uint8_t width) {
   pulseWidth = constrain(width, 1, 255);
 }
 
-void PulseEffect::setWaveCount(uint8_t count) {
+void PulseEffect2::setWaveCount(uint8_t count) {
   if (count > 0 && count <= 5) { // Reasonable bounds
     waveCount = count;
   }
 }
 
-void PulseEffect::update() {
+void PulseEffect2::update() {
   // Safety check - make sure we have valid memory and initialization
   if (!isInitialized()) {
     static bool errorLogged = false;
     if (!errorLogged) {
-      Serial.println("ERROR: PulseEffect update called on uninitialized effect");
+      Serial.println("ERROR: PulseEffect2 update called on uninitialized effect");
       errorLogged = true;
     }
     return;
@@ -88,10 +88,10 @@ void PulseEffect::update() {
   // Removed hue shifting code to keep a fixed color
 }
 
-void PulseEffect::updateSegment(int segmentIndex) {
+void PulseEffect2::updateSegment(int segmentIndex) {
   for (int i = 0; i < segmentLength; i++) {
     // Calculate distance from end (0 = far end, 99 = center/hilt)
-    // MODIFIED: Reversed to make pulses go from center to ends
+    // Maintain the pulse direction from center to ends
     uint8_t distanceFromCenter = (segmentLength - 1) - i;
     
     // Create multiple sine waves with different frequencies
@@ -114,8 +114,7 @@ void PulseEffect::updateSegment(int segmentIndex) {
     // Cap the brightness at 255
     brightness = (brightness > uint16_t(255)) ? uint16_t(255) : brightness;
     
-    // Use the fixed baseHue instead of varying it based on distance
-    // Set the LED color in the appropriate segment
+    // Use the fixed baseHue instead of the dual-color pattern
     CRGB color = CHSV(baseHue, 255, brightness);
     
     switch (segmentIndex) {

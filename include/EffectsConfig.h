@@ -31,7 +31,7 @@
 #define FIRE1_COOLING 65              // How quickly fire cools down (higher = faster cooling)
 #define FIRE1_SPARKING 90             // How many sparks are created (higher = more sparks)
 #define FIRE1_HEAT_DISSIPATION 3      // How heat dissipates (used in heat averaging formula)
-#define FIRE1_BASE_COLOR CRGB::GreenYellow   // Base color for fire effect 1
+#define FIRE1_BASE_COLOR CRGB::DarkGreen   // Base color for fire effect 1
 
 // ---------------------------------------------------------------------------
 // FIRE EFFECT 2 SETTINGS
@@ -41,7 +41,7 @@
 #define FIRE2_COOLING 65              // How quickly fire cools down (higher = faster cooling)
 #define FIRE2_SPARKING 90            // How many sparks are created (higher = more sparks)
 #define FIRE2_HEAT_DISSIPATION 3      // How heat dissipates (used in heat averaging formula)
-#define FIRE2_BASE_COLOR CRGB::Purple  // Base color for fire effect 2
+#define FIRE2_BASE_COLOR CRGB::DarkBlue  // Base color for fire effect 2
 
 // ---------------------------------------------------------------------------
 // PULSE EFFECT SETTINGS
@@ -54,6 +54,30 @@
 #define PULSE_FADE_RATE 50             // How quickly pulse fades (higher = faster fade)
 #define PULSE_MIN_BRIGHTNESS 20       // Minimum brightness during pulse (0-255)
 #define PULSE_MAX_BRIGHTNESS 200      // Maximum brightness during pulse (0-255)
+
+// ---------------------------------------------------------------------------
+// PULSE EFFECT 1 SETTINGS
+// ---------------------------------------------------------------------------
+
+// Pulse effect 1 - creates a faster, more colorful pulsing wave
+#define PULSE1_SPEED 200               // Speed of pulse animation (higher = faster)
+#define PULSE1_WIDTH 75                // Width of the pulse (1-255, higher = shorter pulses)
+#define PULSE1_COLOR CRGB::Green       // Default color of pulse effect 1
+#define PULSE1_FADE_RATE 50            // How quickly pulse fades (higher = faster fade)
+#define PULSE1_MIN_BRIGHTNESS 20       // Minimum brightness during pulse (0-255)
+#define PULSE1_MAX_BRIGHTNESS 200      // Maximum brightness during pulse (0-255)
+
+// ---------------------------------------------------------------------------
+// PULSE EFFECT 2 SETTINGS
+// ---------------------------------------------------------------------------
+
+// Pulse effect 2 - creates a double-pulse wave pattern
+#define PULSE2_SPEED 200               // Speed of pulse animation (higher = faster)
+#define PULSE2_WIDTH 75                // Width of the pulse (1-255, higher = shorter pulses)
+#define PULSE2_COLOR CRGB::Red         // Default color of pulse effect 2
+#define PULSE2_FADE_RATE 50            // How quickly pulse fades (higher = faster fade)
+#define PULSE2_MIN_BRIGHTNESS 20       // Minimum brightness during pulse (0-255)
+#define PULSE2_MAX_BRIGHTNESS 200      // Maximum brightness during pulse (0-255)
 
 // ---------------------------------------------------------------------------
 // RAINBOW EFFECT SETTINGS
@@ -70,11 +94,11 @@
 // ---------------------------------------------------------------------------
 
 // Strobe effect creates a flashing strobe light - Fix this, the settings are weird and I'd like more options
-#define STROBE_ON_TIME 1             // Milliseconds the strobe is ON
-#define STROBE_OFF_TIME 1           // Milliseconds the strobe is OFF
+#define STROBE_ON_TIME 25             // Milliseconds the strobe is ON
+#define STROBE_OFF_TIME 25           // Milliseconds the strobe is OFF
 #define STROBE_COLOR CRGB::White      // Color of strobe effect
-#define STROBE_FADE_OUT false          // Whether strobe fades out (true) or cuts off (false)
-#define STROBE_FADE_RATE 10           // How quickly strobe fades (higher = faster fade)
+#define STROBE_FADE_OUT true          // Whether strobe fades out (true) or cuts off (false)
+#define STROBE_FADE_RATE 15           // How quickly strobe fades (higher = faster fade)
 
 // ---------------------------------------------------------------------------
 // SOLID COLOR EFFECT SETTINGS

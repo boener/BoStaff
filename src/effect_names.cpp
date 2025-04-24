@@ -7,6 +7,8 @@ const char* EFFECT_NAMES[] = {
   "Blue Fire",
   "Green Fire",
   "Energy Pulse",
+  "Fast Energy Pulse",
+  "Dual-Color Pulse",
   "Rainbow",
   "Strobe"
 };
