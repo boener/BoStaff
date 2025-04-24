@@ -24,6 +24,26 @@
 #define FIRE_BASE_COLOR CRGB::OrangeRed // Base color for fire effect
 
 // ---------------------------------------------------------------------------
+// FIRE EFFECT 1 SETTINGS
+// ---------------------------------------------------------------------------
+
+// Fire effect 1 - creates a blue fire simulation
+#define FIRE1_COOLING 65              // How quickly fire cools down (higher = faster cooling)
+#define FIRE1_SPARKING 90             // How many sparks are created (higher = more sparks)
+#define FIRE1_HEAT_DISSIPATION 3      // How heat dissipates (used in heat averaging formula)
+#define FIRE1_BASE_COLOR CRGB::GreenYellow   // Base color for fire effect 1
+
+// ---------------------------------------------------------------------------
+// FIRE EFFECT 2 SETTINGS
+// ---------------------------------------------------------------------------
+
+// Fire effect 2 - creates a green fire simulation
+#define FIRE2_COOLING 65              // How quickly fire cools down (higher = faster cooling)
+#define FIRE2_SPARKING 90            // How many sparks are created (higher = more sparks)
+#define FIRE2_HEAT_DISSIPATION 3      // How heat dissipates (used in heat averaging formula)
+#define FIRE2_BASE_COLOR CRGB::Purple  // Base color for fire effect 2
+
+// ---------------------------------------------------------------------------
 // PULSE EFFECT SETTINGS
 // ---------------------------------------------------------------------------
 

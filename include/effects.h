@@ -6,6 +6,8 @@ class LEDController;
 
 // Include all effect implementations
 #include "../src/Effects/FireEffect.h"
+#include "../src/Effects/FireEffect1.h"
+#include "../src/Effects/FireEffect2.h"
 #include "../src/Effects/PulseEffect.h"
 #include "../src/Effects/RainbowEffect.h"
 #include "../src/Effects/StrobeEffect.h"
@@ -14,9 +16,11 @@ class LEDController;
 enum EffectType {
   EFFECT_SOLID = 0,
   EFFECT_FIRE = 1,
-  EFFECT_PULSE = 2,
-  EFFECT_RAINBOW = 3,
-  EFFECT_STROBE = 4,
+  EFFECT_FIRE1 = 2,
+  EFFECT_FIRE2 = 3,
+  EFFECT_PULSE = 4,
+  EFFECT_RAINBOW = 5,
+  EFFECT_STROBE = 6,
   NUM_EFFECTS
 };
 

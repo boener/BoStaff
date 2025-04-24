@@ -24,6 +24,8 @@ PowerManager powerManager;
 
 // Effect instances - UPDATED FOR SINGLE STRIP
 FireEffect* fireEffect = nullptr;
+FireEffect1* fireEffect1 = nullptr;
+FireEffect2* fireEffect2 = nullptr;
 PulseEffect* pulseEffect = nullptr;
 RainbowEffect* rainbowEffect = nullptr;
 StrobeEffect* strobeEffect = nullptr;
@@ -52,12 +54,16 @@ const unsigned long POWER_UPDATE_INTERVAL = 500; // Power check every 500ms
 void initializeAllEffects() {
   // Clear any existing effects first
   if (fireEffect) delete fireEffect;
+  if (fireEffect1) delete fireEffect1;
+  if (fireEffect2) delete fireEffect2;
   if (pulseEffect) delete pulseEffect;
   if (rainbowEffect) delete rainbowEffect;
   if (strobeEffect) delete strobeEffect;
   
   // Set all pointers to null (important to prevent dangling pointers)
   fireEffect = nullptr;
+  fireEffect1 = nullptr;
+  fireEffect2 = nullptr;
   pulseEffect = nullptr;
   rainbowEffect = nullptr;
   strobeEffect = nullptr;
@@ -70,6 +76,22 @@ void initializeAllEffects() {
   
   if (!fireEffect || !fireEffect->isInitialized()) {
     Serial.println(F("Error initializing FireEffect!"));
+    allEffectsInitialized = false;
+  }
+  
+  // Try to create FireEffect1 instance
+  fireEffect1 = new FireEffect1(&ledController);
+  
+  if (!fireEffect1 || !fireEffect1->isInitialized()) {
+    Serial.println(F("Error initializing FireEffect1!"));
+    allEffectsInitialized = false;
+  }
+  
+  // Try to create FireEffect2 instance
+  fireEffect2 = new FireEffect2(&ledController);
+  
+  if (!fireEffect2 || !fireEffect2->isInitialized()) {
+    Serial.println(F("Error initializing FireEffect2!"));
     allEffectsInitialized = false;
   }
   
@@ -292,6 +314,24 @@ void loop() {
         } else {
           // Fallback to a simple effect if fire effect is not available
           fill_solid(ledController.getLeds(), NUM_LEDS_TOTAL, CRGB::Red);
+        }
+        break;
+        
+      case EFFECT_FIRE1:
+        if (fireEffect1 && fireEffect1->isInitialized()) {
+          fireEffect1->update();
+        } else {
+          // Fallback to a simple effect
+          fill_solid(ledController.getLeds(), NUM_LEDS_TOTAL, CRGB::Blue);
+        }
+        break;
+        
+      case EFFECT_FIRE2:
+        if (fireEffect2 && fireEffect2->isInitialized()) {
+          fireEffect2->update();
+        } else {
+          // Fallback to a simple effect
+          fill_solid(ledController.getLeds(), NUM_LEDS_TOTAL, CRGB::Green);
         }
         break;
         
