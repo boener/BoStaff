@@ -93,12 +93,13 @@
 // STROBE EFFECT SETTINGS
 // ---------------------------------------------------------------------------
 
-// Strobe effect creates a flashing strobe light - Fix this, the settings are weird and I'd like more options
-#define STROBE_ON_TIME 25             // Milliseconds the strobe is ON
-#define STROBE_OFF_TIME 25           // Milliseconds the strobe is OFF
+// Strobe effect creates a flashing strobe light
+#define STROBE_ON_TIME 2              // Counts the strobe is ON, about 15ms each
+#define STROBE_OFF_TIME 3             // Counts the strobe is OFF, about 15ms each
 #define STROBE_COLOR CRGB::White      // Color of strobe effect
 #define STROBE_FADE_OUT true          // Whether strobe fades out (true) or cuts off (false)
-#define STROBE_FADE_RATE 15           // How quickly strobe fades (higher = faster fade)
+#define STROBE_FADE_RATE 1            // How quickly strobe fades (higher = faster fade)
+#define STROBE_BRIGHTNESS 150         // Brightness of the strobe effect (0-255)
 
 // ---------------------------------------------------------------------------
 // SOLID COLOR EFFECT SETTINGS

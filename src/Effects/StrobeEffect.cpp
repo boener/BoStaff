@@ -14,13 +14,13 @@ StrobeEffect::StrobeEffect(LEDController* ledController, int segmentLen) :
   fadeOut = STROBE_FADE_OUT;
   fadeRate = STROBE_FADE_RATE;
   
+  // Use the brightness from config
+  flashMaxBrightness = STROBE_BRIGHTNESS;
+  
   // Calculate speed and duty cycle from on/off times
   uint16_t totalPeriod = onTime + offTime;
   speed = map(totalPeriod, 500, 50, 0, 255); // Inverse mapping: shorter period = higher speed
   duty = (onTime * 100) / totalPeriod;       // Calculate duty cycle as percentage
-  
-  // Set default flash brightness to something reasonable
-  flashMaxBrightness = 25;
   
   // Validate inputs
   if (!ledController) {
@@ -38,7 +38,9 @@ StrobeEffect::StrobeEffect(LEDController* ledController, int segmentLen) :
   Serial.print(", Off Time: ");
   Serial.print(offTime);
   Serial.print(", Fade Out: ");
-  Serial.println(fadeOut ? "Enabled" : "Disabled");
+  Serial.print(fadeOut ? "Enabled" : "Disabled");
+  Serial.print(", Brightness: ");
+  Serial.println(flashMaxBrightness);
 }
 
 StrobeEffect::~StrobeEffect() {
