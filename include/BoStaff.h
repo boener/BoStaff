@@ -38,13 +38,28 @@
 #define SEGMENT_4_START 399   // Fourth segment - counts down
 #define SEGMENT_4_END 300
 
+// Impact type enumeration for classification (future use)
+enum ImpactType {
+  IMPACT_NONE,      // No impact detected
+  IMPACT_STAB,      // Stabbing motion (low gyro, high accel)
+  IMPACT_ROTATION   // Rotational motion (high gyro)
+};
+
 // Global configuration structure
 struct Config {
   uint8_t currentMode = EFFECT_FIRE;   // Default mode
   uint8_t brightness = DEFAULT_BRIGHTNESS;            // Default from config
   uint8_t impactBrightness = IMPACT_BRIGHTNESS;     // From config
   uint8_t numModes = NUM_EFFECTS;      // Number of available modes
-  uint16_t impactThreshold = IMPACT_THRESHOLD;     // Default from config
+  
+  // OLD SINGLE-SENSOR THRESHOLD - REPLACED WITH DUAL-SENSOR SYSTEM
+  // uint16_t impactThreshold = IMPACT_THRESHOLD;     // Default from config
+  
+  // Impact classification tracking (for future use)
+  ImpactType lastImpactType = IMPACT_NONE;    // Type of last detected impact
+  uint32_t totalStabImpacts = 0;              // Count of stab impacts
+  uint32_t totalRotationImpacts = 0;          // Count of rotation impacts
+  
   uint16_t impactFlashDuration = IMPACT_FLASH_DURATION;  // Duration of impact flash from config
   bool impactFadeOut = IMPACT_FADE_OUT;  // Whether to fade out after impact
   uint8_t impactFadeRate = IMPACT_FADE_RATE;  // How quickly impact fades
@@ -137,7 +152,7 @@ public:
   bool modeChangeRequested();
 };
 
-// Accelerometer handler class - Enhanced for better I2C timing
+// Accelerometer handler class - Enhanced for dual-sensor impact detection
 class AccelerometerHandler {
 private:
   Adafruit_MPU6050 mpu;
@@ -166,7 +181,9 @@ public:
   bool begin(Config* cfg);
   void update();
   bool impactDetected();
-  void calibrate();
+  
+  // OLD CALIBRATION METHOD - REMOVED IN DUAL-SENSOR SYSTEM
+  // void calibrate();
   
   // Status methods
   bool isInitialized() const { return mpuInitialized; }

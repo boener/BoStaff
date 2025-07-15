@@ -30,7 +30,7 @@ bool AccelerometerHandler::begin(Config* cfg) {
   // Configure I2C with centralized method
   configureI2C();
   
-  Serial.println("Initializing accelerometer...");
+  Serial.println("Initializing dual-sensor accelerometer system...");
   
   // Allow the I2C bus to stabilize
   delay(10);
@@ -44,28 +44,42 @@ bool AccelerometerHandler::begin(Config* cfg) {
   
   // If we got here, the MPU initialized successfully
   mpuInitialized = true;
-  Serial.println("Accelerometer initialized with 16G range");
-  Serial.print("Impact threshold set to: ");
-  Serial.println(config->impactThreshold);
+  Serial.println("Dual-sensor system initialized with 16G accel range and 500°/s gyro range");
+  Serial.println("NEW THRESHOLDS:");
+  Serial.print("  Accelerometer: "); Serial.println(IMPACT_ACCEL_THRESHOLD);
+  Serial.print("  Gyroscope: "); Serial.println(IMPACT_GYRO_THRESHOLD);
+  Serial.print("  Rotation Classification: "); Serial.println(ROTATION_CLASSIFICATION_THRESHOLD);
   
   // Get initial reading for verification
   sensors_event_t a, g, temp;
   if (readMPUData(&a, &g, &temp)) {
-    Serial.println("Initial accelerometer readings:");
-    Serial.print("X: "); Serial.print(a.acceleration.x);
-    Serial.print(" Y: "); Serial.print(a.acceleration.y);
-    Serial.print(" Z: "); Serial.print(a.acceleration.z);
-    Serial.println(" m/s^2");
-    
-    // Calculate and print magnitude
+    // Calculate accelerometer magnitude
     float accelMagnitude = sqrt(a.acceleration.x * a.acceleration.x + 
                               a.acceleration.y * a.acceleration.y + 
                               a.acceleration.z * a.acceleration.z);
-    Serial.print("Magnitude: "); Serial.print(accelMagnitude);
-    Serial.print(" m/s^2, Raw: "); Serial.println((uint16_t)(accelMagnitude * 100));
+    uint16_t accelRaw = (uint16_t)(accelMagnitude * 100);
+    
+    // Calculate gyroscope magnitude
+    float gyroMagnitude = sqrt(g.gyro.x * g.gyro.x + 
+                              g.gyro.y * g.gyro.y + 
+                              g.gyro.z * g.gyro.z);
+    uint16_t gyroRaw = (uint16_t)(gyroMagnitude * 100);
+    
+    Serial.println("Initial sensor readings:");
+    Serial.print("  Accel: X="); Serial.print(a.acceleration.x);
+    Serial.print(" Y="); Serial.print(a.acceleration.y);
+    Serial.print(" Z="); Serial.print(a.acceleration.z);
+    Serial.print(" m/s^2, Mag="); Serial.print(accelMagnitude);
+    Serial.print(" m/s^2, Raw="); Serial.println(accelRaw);
+    
+    Serial.print("  Gyro: X="); Serial.print(g.gyro.x);
+    Serial.print(" Y="); Serial.print(g.gyro.y);
+    Serial.print(" Z="); Serial.print(g.gyro.z);
+    Serial.print(" rad/s, Mag="); Serial.print(gyroMagnitude);
+    Serial.print(" rad/s, Raw="); Serial.println(gyroRaw);
   }
   else {
-    Serial.println("WARNING: Initial accelerometer reading failed");
+    Serial.println("WARNING: Initial sensor reading failed");
   }
   
   return mpuInitialized;
@@ -303,40 +317,76 @@ void AccelerometerHandler::update() {
     return;
   }
   
-  // Calculate magnitude of acceleration
+  // DUAL-SENSOR IMPACT DETECTION IMPLEMENTATION
+  
+  // Calculate accelerometer magnitude
   float accelMagnitude = sqrt(a.acceleration.x * a.acceleration.x + 
                              a.acceleration.y * a.acceleration.y + 
                              a.acceleration.z * a.acceleration.z);
-  
-  // Convert to raw value comparable with threshold
   uint16_t accelRaw = (uint16_t)(accelMagnitude * 100);
   
-  // Use the configured threshold instead of hard-coded value
-  uint16_t currentThreshold = config->impactThreshold;
+  // Calculate gyroscope magnitude (NEW)
+  float gyroMagnitude = sqrt(g.gyro.x * g.gyro.x + 
+                            g.gyro.y * g.gyro.y + 
+                            g.gyro.z * g.gyro.z);
+  uint16_t gyroRaw = (uint16_t)(gyroMagnitude * 100);
   
-  // Check for impact (with cooldown to prevent multiple triggers)
-  if (accelRaw > currentThreshold && 
-      (millis() - lastImpactTime > impactCooldown)) {
+  // NEW DUAL-SENSOR DETECTION LOGIC: (AccelMag > 7500) || (GyroMag > 1200)
+  bool accelThresholdExceeded = (accelRaw > IMPACT_ACCEL_THRESHOLD);
+  bool gyroThresholdExceeded = (gyroRaw > IMPACT_GYRO_THRESHOLD);
+  bool impactDetectedByEither = accelThresholdExceeded || gyroThresholdExceeded;
+  
+  // Check for impact with cooldown to prevent multiple triggers
+  if (impactDetectedByEither && (millis() - lastImpactTime > impactCooldown)) {
+    
+    // IMPACT CLASSIFICATION LOGIC
+    ImpactType detectedImpactType;
+    const char* impactTypeString;
+    
+    if (gyroRaw >= ROTATION_CLASSIFICATION_THRESHOLD) {
+      detectedImpactType = IMPACT_ROTATION;
+      impactTypeString = "ROTATION";
+      config->totalRotationImpacts++;
+    } else {
+      detectedImpactType = IMPACT_STAB;
+      impactTypeString = "STAB";
+      config->totalStabImpacts++;
+    }
+    
+    // Update config with impact classification
+    config->lastImpactType = detectedImpactType;
+    
+    // Set impact detected flag
     impactDetectedFlag = true;
     lastImpactTime = millis();
     
-    Serial.println("!!! IMPACT DETECTED !!!");
-    Serial.print("Magnitude: "); Serial.print(accelRaw);
-    Serial.print(" (Threshold: "); Serial.print(currentThreshold);
+    // ENHANCED SERIAL OUTPUT
+    Serial.println("!!! DUAL-SENSOR IMPACT DETECTED !!!");
+    Serial.print("  Type: "); Serial.println(impactTypeString);
+    Serial.print("  Accel: "); Serial.print(accelRaw);
+    Serial.print(" (Threshold: "); Serial.print(IMPACT_ACCEL_THRESHOLD);
+    Serial.print(", Exceeded: "); Serial.print(accelThresholdExceeded ? "YES" : "NO");
     Serial.println(")");
+    Serial.print("  Gyro: "); Serial.print(gyroRaw);
+    Serial.print(" (Threshold: "); Serial.print(IMPACT_GYRO_THRESHOLD);
+    Serial.print(", Exceeded: "); Serial.print(gyroThresholdExceeded ? "YES" : "NO");
+    Serial.println(")");
+    Serial.print("  Classification: GyroMag "); Serial.print(gyroRaw);
+    Serial.print(gyroRaw >= ROTATION_CLASSIFICATION_THRESHOLD ? " >= " : " < ");
+    Serial.print(ROTATION_CLASSIFICATION_THRESHOLD); Serial.print(" = "); Serial.println(impactTypeString);
+    Serial.print("  Impact Counts - Stabs: "); Serial.print(config->totalStabImpacts);
+    Serial.print(", Rotations: "); Serial.println(config->totalRotationImpacts);
+    
   } else {
-    // Only log when debug is enabled
-    #ifdef DEBUG_MODE
-    if (accelRaw <= currentThreshold) {
-      Serial.println("No impact: Acceleration below threshold");
-    }
-    
-    if (millis() - lastImpactTime <= impactCooldown) {
-      Serial.println("No impact: Within cooldown period");
-    }
-    #endif
-    
+    // No impact detected
     impactDetectedFlag = false;
+    
+    // Optional debug output (commented out for performance)
+    /*
+    Serial.print("No impact - Accel: "); Serial.print(accelRaw);
+    Serial.print(", Gyro: "); Serial.print(gyroRaw);
+    Serial.print(", Cooldown: "); Serial.println(millis() - lastImpactTime <= impactCooldown ? "ACTIVE" : "INACTIVE");
+    */
   }
   
   // Make sure we don't hog the CPU
@@ -353,191 +403,19 @@ bool AccelerometerHandler::impactDetected() {
   return result;
 }
 
+// OLD CALIBRATION METHODS REMOVED FOR DUAL-SENSOR SYSTEM
+/*
 void AccelerometerHandler::calibrate() {
-  if (!mpuInitialized) {
-    Serial.println("ERROR: Cannot calibrate - Accelerometer not initialized");
-    // Try to initialize
-    if (!begin(config)) {
-      Serial.println("ERROR: Failed to initialize accelerometer for calibration");
-      return;
-    }
-  }
-  
-  Serial.println("\n== ACCELEROMETER CALIBRATION ==");
-  Serial.println("This will help determine the best impact threshold settings.");
-  Serial.println("Follow the instructions below:");
-  
-  // Step 1: Collect baseline readings (at rest)
-  Serial.println("\nSTEP 1: Measuring baseline noise");
-  Serial.println("Please place the bo staff on a stable surface and keep it still.");
-  Serial.println("Collecting baseline readings for 3 seconds...");
-  
-  // Variables to track baseline statistics
-  uint16_t baselineMax = 0;
-  uint16_t baselineMin = 65535;
-  float baselineSum = 0;
-  int baselineSamples = 0;
-  
-  // Wait for staff to be still
-  for (int i = 0; i < 100; i++) {
-    delay(10);
-    yield(); // Give time for other processes
-  }
-  
-  // Collect baseline readings for 3 seconds
-  unsigned long baselineStart = millis();
-  while (millis() - baselineStart < 3000) {
-    sensors_event_t a, g, temp;
-    if (readMPUData(&a, &g, &temp)) {
-      float accelMagnitude = sqrt(a.acceleration.x * a.acceleration.x + 
-                                 a.acceleration.y * a.acceleration.y + 
-                                 a.acceleration.z * a.acceleration.z);
-      
-      uint16_t accelRaw = (uint16_t)(accelMagnitude * 100);
-      
-      baselineMax = max(baselineMax, accelRaw);
-      baselineMin = min(baselineMin, accelRaw);
-      baselineSum += accelRaw;
-      baselineSamples++;
-      
-      // Show the current reading
-      Serial.print(".");
-      if (baselineSamples % 50 == 0) Serial.println();
-    }
-    delay(10);
-    yield(); // Prevent watchdog resets
-  }
-  
-  float baselineAvg = baselineSum / baselineSamples;
-  Serial.println();
-  Serial.print("Baseline average: "); Serial.println(baselineAvg);
-  Serial.print("Baseline min: "); Serial.println(baselineMin);
-  Serial.print("Baseline max: "); Serial.println(baselineMax);
-  
-  // Step 2: Collect sample impact readings
-  Serial.println("\nSTEP 2: Measuring impact levels");
-  Serial.println("Please perform 5 sample impacts of different strengths.");
-  Serial.println("Start with very gentle taps and gradually increase strength.");
-  Serial.println("Press button once before each impact to continue.");
-  
-  uint16_t impactSamples[5] = {0, 0, 0, 0, 0};
-  
-  for (int i = 0; i < 5; i++) {
-    Serial.print("\nReady for impact sample #"); Serial.println(i + 1);
-    Serial.println("Press button once when ready to perform impact...");
-    
-    // Wait for button press
-    waitForButtonPress();
-    
-    Serial.println("Now perform an impact within 3 seconds!");
-    
-    // Measure the maximum acceleration during a 3-second window
-    unsigned long impactStart = millis();
-    uint16_t maxImpact = 0;
-    
-    while (millis() - impactStart < 3000) {
-      sensors_event_t a, g, temp;
-      if (readMPUData(&a, &g, &temp)) {
-        float accelMagnitude = sqrt(a.acceleration.x * a.acceleration.x + 
-                                   a.acceleration.y * a.acceleration.y + 
-                                   a.acceleration.z * a.acceleration.z);
-        
-        uint16_t accelRaw = (uint16_t)(accelMagnitude * 100);
-        
-        if (accelRaw > maxImpact) {
-          maxImpact = accelRaw;
-        }
-        
-        // Print current reading
-        Serial.print("Current: "); Serial.print(accelRaw);
-        Serial.print(", Max: "); Serial.println(maxImpact);
-      }
-      
-      delay(5);
-      yield(); // Prevent watchdog resets
-    }
-    
-    impactSamples[i] = maxImpact;
-    Serial.print("Impact #"); Serial.print(i + 1);
-    Serial.print(" maximum reading: "); Serial.println(impactSamples[i]);
-    
-    // Small delay between impact measurements
-    delay(500);
-    yield();
-  }
-  
-  // Step 3: Calculate appropriate threshold
-  // Sort the impact samples to find median
-  for (int i = 0; i < 4; i++) {
-    for (int j = i + 1; j < 5; j++) {
-      if (impactSamples[i] > impactSamples[j]) {
-        uint16_t temp = impactSamples[i];
-        impactSamples[i] = impactSamples[j];
-        impactSamples[j] = temp;
-      }
-    }
-  }
-  
-  // Calculate recommended threshold
-  uint16_t lightest = impactSamples[0];
-  uint16_t medianImpact = impactSamples[2];
-  uint16_t strongest = impactSamples[4];
-  
-  // Set threshold to slightly below the lightest impact to ensure detection
-  uint16_t recommendedThreshold = (uint16_t)(lightest * 0.8); // 80% of lightest impact
-  
-  // Add some buffer above the baseline to avoid false positives
-  uint16_t minThreshold = baselineMax * 1.5; // 150% of max baseline noise
-  
-  // Use the higher of the two calculated thresholds
-  recommendedThreshold = max(recommendedThreshold, minThreshold);
-  
-  // Display results
-  Serial.println("\n== CALIBRATION RESULTS ==");
-  Serial.print("Baseline noise (max): "); Serial.println(baselineMax);
-  Serial.print("Lightest impact: "); Serial.println(lightest);
-  Serial.print("Median impact: "); Serial.println(medianImpact);
-  Serial.print("Strongest impact: "); Serial.println(strongest);
-  Serial.print("Recommended threshold: "); Serial.println(recommendedThreshold);
-  
-  // Step 4: Set and save the new threshold
-  Serial.println("\nSetting new impact threshold...");
-  config->impactThreshold = recommendedThreshold;
-  
-  // Display final setting
-  Serial.print("New impact threshold set to: ");
-  Serial.println(config->impactThreshold);
-  Serial.println("Calibration complete!");
-  Serial.println("NOTE: Remember to save settings for the new threshold to persist.");
+  // CALIBRATION SYSTEM REMOVED - Dual-sensor system uses fixed thresholds
+  // based on extensive data analysis. No calibration needed.
+  Serial.println("NOTICE: Calibration system removed in dual-sensor implementation.");
+  Serial.println("Using optimized fixed thresholds based on data analysis:");
+  Serial.print("  Accelerometer threshold: "); Serial.println(IMPACT_ACCEL_THRESHOLD);
+  Serial.print("  Gyroscope threshold: "); Serial.println(IMPACT_GYRO_THRESHOLD);
+  Serial.print("  Rotation classification: "); Serial.println(ROTATION_CLASSIFICATION_THRESHOLD);
 }
 
 void AccelerometerHandler::waitForButtonPress() {
-  // Simple helper function to wait for a button press
-  // Assumes the button is connected to BTN_PIN (defined in BoStaff.h)
-  
-  // Ensure button is not already pressed
-  while (digitalRead(BTN_PIN) == LOW) {
-    delay(10);
-    yield(); // Allow other processes to run
-  }
-  
-  // Wait for button press
-  while (digitalRead(BTN_PIN) == HIGH) {
-    delay(10);
-    yield(); // Allow other processes to run
-  }
-  
-  // Debounce
-  delay(50);
-  yield();
-  
-  // Wait for button release
-  while (digitalRead(BTN_PIN) == LOW) {
-    delay(10);
-    yield(); // Allow other processes to run
-  }
-  
-  // Debounce
-  delay(50);
-  yield();
+  // Helper method removed with calibration system
 }
+*/

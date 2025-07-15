@@ -19,7 +19,15 @@
 // Impact detection and effect settings
 #define IMPACT_BRIGHTNESS 150         // Brightness when impact detected (0-255)
 #define IMPACT_FLASH_DURATION 100     // Duration of impact flash in milliseconds
-#define IMPACT_THRESHOLD 1600         // Default impact detection threshold (~1.6G)
+
+// OLD SINGLE-SENSOR THRESHOLD - REPLACED WITH DUAL-SENSOR SYSTEM
+// #define IMPACT_THRESHOLD 1600         // Default impact detection threshold (~1.6G)
+
+// NEW DUAL-SENSOR IMPACT DETECTION THRESHOLDS
+#define IMPACT_ACCEL_THRESHOLD 7500    // 75.0 m/s² in raw format (accelerometer threshold)
+#define IMPACT_GYRO_THRESHOLD 1200     // 12.0 rad/s in raw format (gyroscope threshold)
+#define ROTATION_CLASSIFICATION_THRESHOLD 630  // 6.3 rad/s in raw format (rotation vs stab classification)
+
 #define IMPACT_COOLDOWN 500           // Minimum time between impacts in milliseconds
 #define IMPACT_COLOR CRGB::BlueViolet // Color of the impact flash (dimmed white)
 #define IMPACT_FADE_OUT true          // Whether to fade out after impact (true) or cut off (false)

@@ -35,11 +35,13 @@ StrobeEffect* strobeEffect = nullptr;
 // Effect parameters
 EffectParams effectParams[NUM_EFFECTS];
 
-// Variables for calibration trigger
+// OLD CALIBRATION SYSTEM VARIABLES - REMOVED FOR DUAL-SENSOR SYSTEM
+/*
 const unsigned long CALIBRATION_LONG_PRESS = 5000; // 5 seconds for calibration trigger
 bool calibrationMode = false;
 unsigned long buttonPressStart = 0;
 bool buttonWasPressed = false;
+*/
 
 // Timing management for task scheduling
 unsigned long lastAccelUpdate = 0;
@@ -187,7 +189,7 @@ void setup() {
   
   // Initialize accelerometer (after other components to avoid I2C conflicts)
   if (accelHandler.begin(&config)) {
-    Serial.println(F("Accelerometer initialized successfully"));
+    Serial.println(F("Dual-sensor accelerometer system initialized successfully"));
   } else {
     Serial.println(F("WARNING: Accelerometer initialization had issues, will retry in main loop"));
   }
@@ -212,9 +214,12 @@ void setup() {
   Serial.print(F("Battery: ")); Serial.print(batteryVoltage); Serial.print(F("V, ")); 
   Serial.print(batteryPercentage); Serial.println(F("%"));
   
-  // Print calibration instructions
-  Serial.println(F("\nTo enter accelerometer calibration mode,"));
-  Serial.println(F("hold the button for 5 seconds until all LEDs flash blue."));
+  // DUAL-SENSOR SYSTEM INFO - CALIBRATION NO LONGER NEEDED
+  Serial.println(F("\nDual-Sensor Impact Detection System Active"));
+  Serial.println(F("Calibration not required - using optimized fixed thresholds"));
+  Serial.print(F("Accelerometer Threshold: ")); Serial.println(IMPACT_ACCEL_THRESHOLD);
+  Serial.print(F("Gyroscope Threshold: ")); Serial.println(IMPACT_GYRO_THRESHOLD);
+  Serial.print(F("Rotation Classification: ")); Serial.println(ROTATION_CLASSIFICATION_THRESHOLD);
   
   // Initialize loop timing variables
   lastAccelUpdate = millis();
@@ -223,6 +228,8 @@ void setup() {
 }
 
 void loop() {
+  // OLD CALIBRATION TRIGGER CODE - REMOVED FOR DUAL-SENSOR SYSTEM
+  /*
   // Check for calibration mode trigger (long button press)
   if (digitalRead(BTN_PIN) == LOW) {  // Button pressed (active LOW)
     if (!buttonWasPressed) {
@@ -232,59 +239,12 @@ void loop() {
       // Long press detected, enter calibration mode
       calibrationMode = true;
       
-      // Clear all LEDs completely before visual feedback
-      fill_solid(ledController.getLeds(), NUM_LEDS_TOTAL, CRGB::Black);
-      ledController.safeStripRefresh();
-      
-      delay(100);
-      
-      // Visual feedback - flash LEDs blue to indicate calibration mode
-      fill_solid(ledController.getLeds(), NUM_LEDS_TOTAL, CRGB::Blue);
-      ledController.safeStripRefresh();
-      
-      delay(500);
-      
-      // Clear all LEDs completely 
-      fill_solid(ledController.getLeds(), NUM_LEDS_TOTAL, CRGB::Black);
-      ledController.safeStripRefresh();
-      
-      delay(500);
-      
-      Serial.println(F("\n*** ENTERING CALIBRATION MODE ***"));
+      // [... calibration logic removed ...]
       
       // Start the calibration process
       accelHandler.calibrate();
       
-      // Save the new threshold value
-      settingsManager.saveSettings(&config);
-      
-      Serial.print(F("New impact threshold saved: "));
-      Serial.println(config.impactThreshold);
-      
-      // Visual feedback - flash LEDs green to indicate calibration complete
-      fill_solid(ledController.getLeds(), NUM_LEDS_TOTAL, CRGB::Green);
-      ledController.safeStripRefresh();
-      
-      delay(1000);
-      
-      // Clear all LEDs completely before restoring normal operation
-      fill_solid(ledController.getLeds(), NUM_LEDS_TOTAL, CRGB::Black);
-      ledController.safeStripRefresh();
-      
-      // Completely reinitialize all effect objects to ensure clean state
-      initializeAllEffects();
-      
-      // Reset calibration mode
-      calibrationMode = false;
-      
-      // Make sure brightness is restored to normal
-      ledController.setBrightnessMode(BRIGHTNESS_NORMAL);
-      
-      // Restore current LED effect
-      ledController.setMode(config.currentMode);
-      
-      // Force a clean update of the strips
-      ledController.forceRefresh();
+      // [... rest of calibration code removed ...]
     }
   } else {
     buttonWasPressed = false;  // Button released
@@ -295,6 +255,7 @@ void loop() {
     yield(); // Allow watchdog to be fed
     return;
   }
+  */
   
   // Update button state - highest priority task
   buttonHandler.handle();
@@ -312,7 +273,7 @@ void loop() {
   
   // Only read accelerometer at a controlled rate to avoid I2C timing conflicts
   if (millis() - lastAccelUpdate >= ACCEL_UPDATE_INTERVAL) {
-    // Read accelerometer and detect impacts
+    // Read accelerometer and detect impacts using dual-sensor system
     accelHandler.update();
     lastAccelUpdate = millis();
     
