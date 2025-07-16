@@ -356,50 +356,54 @@ void AccelerometerHandler::update() {
     // Update config with impact classification
     config->lastImpactType = detectedImpactType;
     
-    // Set impact detected flag
-    impactDetectedFlag = true;
+    // Set impact detected flag - FIXED: Only set if not already set
+    // This prevents losing an impact between update() and impactDetected() calls
+    if (!impactDetectedFlag) {
+      impactDetectedFlag = true;
+      
+      // ENHANCED SERIAL OUTPUT
+      Serial.println("!!! DUAL-SENSOR IMPACT DETECTED !!!");
+      Serial.print("  Type: "); Serial.println(impactTypeString);
+      Serial.print("  Accel: "); Serial.print(accelRaw);
+      Serial.print(" (Threshold: "); Serial.print(IMPACT_ACCEL_THRESHOLD);
+      Serial.print(", Exceeded: "); Serial.print(accelThresholdExceeded ? "YES" : "NO");
+      Serial.println(")");
+      Serial.print("  Gyro: "); Serial.print(gyroRaw);
+      Serial.print(" (Threshold: "); Serial.print(IMPACT_GYRO_THRESHOLD);
+      Serial.print(", Exceeded: "); Serial.print(gyroThresholdExceeded ? "YES" : "NO");
+      Serial.println(")");
+      Serial.print("  Classification: GyroMag "); Serial.print(gyroRaw);
+      Serial.print(gyroRaw >= ROTATION_CLASSIFICATION_THRESHOLD ? " >= " : " < ");
+      Serial.print(ROTATION_CLASSIFICATION_THRESHOLD); Serial.print(" = "); Serial.println(impactTypeString);
+      Serial.print("  Impact Counts - Stabs: "); Serial.print(config->totalStabImpacts);
+      Serial.print(", Rotations: "); Serial.println(config->totalRotationImpacts);
+    }
+    
     lastImpactTime = millis();
     
-    // ENHANCED SERIAL OUTPUT
-    Serial.println("!!! DUAL-SENSOR IMPACT DETECTED !!!");
-    Serial.print("  Type: "); Serial.println(impactTypeString);
-    Serial.print("  Accel: "); Serial.print(accelRaw);
-    Serial.print(" (Threshold: "); Serial.print(IMPACT_ACCEL_THRESHOLD);
-    Serial.print(", Exceeded: "); Serial.print(accelThresholdExceeded ? "YES" : "NO");
-    Serial.println(")");
-    Serial.print("  Gyro: "); Serial.print(gyroRaw);
-    Serial.print(" (Threshold: "); Serial.print(IMPACT_GYRO_THRESHOLD);
-    Serial.print(", Exceeded: "); Serial.print(gyroThresholdExceeded ? "YES" : "NO");
-    Serial.println(")");
-    Serial.print("  Classification: GyroMag "); Serial.print(gyroRaw);
-    Serial.print(gyroRaw >= ROTATION_CLASSIFICATION_THRESHOLD ? " >= " : " < ");
-    Serial.print(ROTATION_CLASSIFICATION_THRESHOLD); Serial.print(" = "); Serial.println(impactTypeString);
-    Serial.print("  Impact Counts - Stabs: "); Serial.print(config->totalStabImpacts);
-    Serial.print(", Rotations: "); Serial.println(config->totalRotationImpacts);
-    
-  } else {
-    // No impact detected
-    impactDetectedFlag = false;
-    
-    // Optional debug output (commented out for performance)
-    /*
+  }
+  // Note: We no longer clear the flag here - it's only cleared when checked by impactDetected()
+  
+  // Optional debug output (commented out for performance)
+  /*
+  if (!impactDetectedFlag) {
     Serial.print("No impact - Accel: "); Serial.print(accelRaw);
     Serial.print(", Gyro: "); Serial.print(gyroRaw);
     Serial.print(", Cooldown: "); Serial.println(millis() - lastImpactTime <= impactCooldown ? "ACTIVE" : "INACTIVE");
-    */
   }
+  */
   
   // Make sure we don't hog the CPU
   yield();
 }
 
 bool AccelerometerHandler::impactDetected() {
-  // Return and clear the impact flag
+  // FIXED: Atomic read and clear operation to prevent race conditions
   bool result = impactDetectedFlag;
   if (result) {
-    Serial.println("Impact flag checked and returned TRUE");
+    impactDetectedFlag = false;  // Clear the flag after reading
+    Serial.println("Impact flag checked and cleared");
   }
-  impactDetectedFlag = false;
   return result;
 }
 
