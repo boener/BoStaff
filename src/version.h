@@ -14,8 +14,8 @@
 
 // Hardware configuration
 #define HW_VERSION "1.1"
-#define DEFAULT_BRIGHTNESS 25   // Reduced from 150 to 25 (10% of max 255)
-#define DEFAULT_IMPACT_BRIGHTNESS 25 // Reduced from 100 to 25 (10% of max 255)
+// NOTE: Brightness settings moved to EffectsConfig.h for centralized control
+// DEFAULT_BRIGHTNESS and DEFAULT_IMPACT_BRIGHTNESS are now defined in EffectsConfig.h
 
 // LED configuration - UPDATED PIN ASSIGNMENTS
 // Comment out LED pin definitions as they're now provided by platformio.ini build flags

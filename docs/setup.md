@@ -102,14 +102,41 @@ The pin definitions can be found in `include/BoStaff.h`. If you need to change t
 #define SCL_PIN   D1  // GPIO5
 ```
 
-### Effect Configuration
+### Effect and Brightness Configuration
 
-Effects are defined in the `src/Effects` directory. To add a new effect:
+**All effect settings and brightness controls are centralized in `include/EffectsConfig.h`** for easy modification. This includes:
+
+#### Brightness Settings
+- `DEFAULT_BRIGHTNESS`: Normal operating brightness (0-255)
+- `LOW_BATTERY_BRIGHTNESS`: Reduced brightness for low battery
+- `DIM_BEFORE_SLEEP`: Very dim level before sleep mode
+- `IMPACT_BRIGHTNESS`: Brightness during impact flash effect
+
+#### Impact Effect Settings
+- `IMPACT_ACCEL_THRESHOLD`: Accelerometer sensitivity for impact detection
+- `IMPACT_GYRO_THRESHOLD`: Gyroscope sensitivity for rotational impacts
+- `IMPACT_FLASH_DURATION`: Duration of impact flash in milliseconds
+- `IMPACT_COLOR`: Color of the impact flash
+- `IMPACT_FADE_OUT`: Whether to fade out after impact
+- `IMPACT_FADE_RATE`: Speed of fade effect
+
+#### Individual Effect Settings
+Each effect has its own section with customizable parameters:
+- **Fire Effects**: Cooling rate, sparking frequency, heat dissipation
+- **Pulse Effects**: Speed, width, colors, fade rates
+- **Rainbow Effect**: Animation speed, color compression, saturation
+- **Strobe Effect**: On/off timing, colors, brightness
+- **Solid Effect**: Hue change rate, color shifting behavior
+
+### Adding New Effects
+
+To add a new effect:
 
 1. Create a new header file in `src/Effects/`
 2. Add the effect implementation
 3. Update the `LEDController.cpp` file to include the new effect
 4. Update the effect definitions in `BoStaff.h`
+5. Add configuration parameters to `EffectsConfig.h`
 
 ## Usage
 
@@ -120,25 +147,30 @@ Effects are defined in the `src/Effects` directory. To add a new effect:
 ### Effects
 
 1. **Solid Color**: Displays a slowly changing solid color
-2. **Fire**: Realistic fire simulation
-3. **Pulse**: Energy waves emanating from the center
+2. **Fire**: Realistic fire simulation (3 variants with different colors)
+3. **Pulse**: Energy waves emanating from the center (3 variants)
 4. **Rainbow**: Smooth color transitions
 5. **Strobe**: Rapid flashing effect
 
 ### Impact Detection
 
-When the accelerometer detects an impact above the threshold:
+When the dual-sensor system detects an impact above the threshold:
 
-- LED strips will flash white briefly
+- LED strips will flash bright blue-violet briefly
+- Impact type is classified as STAB or ROTATION
 - The system will then return to the current effect
+- 500ms cooldown prevents multiple triggers
 
 ### Customization
 
-The following parameters can be customized in `BoStaff.h`:
+**Important**: All customizable parameters are now located in `include/EffectsConfig.h` for centralized control. This includes:
 
-- `impactThreshold`: Sensitivity of impact detection
-- `impactFlashDuration`: How long the flash effect lasts
-- `brightness`: Default brightness level
+- Brightness levels for different modes
+- Impact detection thresholds and behavior
+- All effect-specific parameters (colors, speeds, patterns)
+- Power management settings
+
+Simply edit the values in `EffectsConfig.h` and rebuild the firmware to apply your changes.
 
 ## Troubleshooting
 
@@ -152,7 +184,7 @@ The following parameters can be customized in `BoStaff.h`:
 
 - Check I2C connections: SDA and SCL should be properly wired
 - Verify I2C address: The default address for MPU-6050 is 0x68
-- Adjust threshold: If sensitivity is too high/low, adjust `impactThreshold`
+- Adjust thresholds: Modify `IMPACT_ACCEL_THRESHOLD` and `IMPACT_GYRO_THRESHOLD` in `EffectsConfig.h`
 
 ### Button Not Responding
 

@@ -125,7 +125,7 @@
 // SOLID COLOR EFFECT SETTINGS
 // ---------------------------------------------------------------------------
 
-// Solid effect creates a gently shifting solid color - settings are weirs, change rate at min is way to slow, WHY?
+// Solid effect creates a gently shifting solid color - settings are weird, change rate at min is way too slow, WHY?
 #define SOLID_HUE_CHANGE_RATE 1       // How quickly hue changes (higher = slower change) FIX THIS, 1 is still too slow!
 #define SOLID_USE_HUE_SHIFT true      // Whether to shift hue (true) or stay fixed (false)
 
