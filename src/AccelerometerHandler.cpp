@@ -384,15 +384,14 @@ void AccelerometerHandler::update() {
   }
   // Note: We no longer clear the flag here - it's only cleared when checked by impactDetected()
   
-  // Optional debug output (commented out for performance)
-  /*
+  // Optional debug output (enabled for debugging)
+
   if (!impactDetectedFlag) {
     Serial.print("No impact - Accel: "); Serial.print(accelRaw);
     Serial.print(", Gyro: "); Serial.print(gyroRaw);
     Serial.print(", Cooldown: "); Serial.println(millis() - lastImpactTime <= impactCooldown ? "ACTIVE" : "INACTIVE");
   }
-  */
-  
+
   // Make sure we don't hog the CPU
   yield();
 }
