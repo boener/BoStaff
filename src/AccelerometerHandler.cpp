@@ -27,6 +27,10 @@ bool AccelerometerHandler::begin(Config* cfg) {
   lastRecoveryAttempt = 0;
   mpuInitialized = false;
   
+  // Initialize gyro delta detection variables
+  previousGyroRaw = 0;
+  firstReading = true;
+  
   // Configure I2C with centralized method
   configureI2C();
   
@@ -45,9 +49,10 @@ bool AccelerometerHandler::begin(Config* cfg) {
   // If we got here, the MPU initialized successfully
   mpuInitialized = true;
   Serial.println("Dual-sensor system initialized with 16G accel range and 500°/s gyro range");
-  Serial.println("NEW THRESHOLDS:");
+  Serial.println("NEW GYRO DELTA DETECTION THRESHOLDS:");
   Serial.print("  Accelerometer: "); Serial.println(IMPACT_ACCEL_THRESHOLD);
-  Serial.print("  Gyroscope: "); Serial.println(IMPACT_GYRO_THRESHOLD);
+  Serial.print("  Gyroscope (OLD): "); Serial.println(IMPACT_GYRO_THRESHOLD);
+  Serial.print("  Gyroscope DELTA (NEW): "); Serial.println(IMPACT_GYRO_DELTA_THRESHOLD);
   Serial.print("  Rotation Classification: "); Serial.println(ROTATION_CLASSIFICATION_THRESHOLD);
   
   // Get initial reading for verification
@@ -65,6 +70,9 @@ bool AccelerometerHandler::begin(Config* cfg) {
                               g.gyro.z * g.gyro.z);
     uint16_t gyroRaw = (uint16_t)(gyroMagnitude * 100);
     
+    // Initialize previous reading for delta detection
+    previousGyroRaw = gyroRaw;
+    
     Serial.println("Initial sensor readings:");
     Serial.print("  Accel: X="); Serial.print(a.acceleration.x);
     Serial.print(" Y="); Serial.print(a.acceleration.y);
@@ -77,6 +85,7 @@ bool AccelerometerHandler::begin(Config* cfg) {
     Serial.print(" Z="); Serial.print(g.gyro.z);
     Serial.print(" rad/s, Mag="); Serial.print(gyroMagnitude);
     Serial.print(" rad/s, Raw="); Serial.println(gyroRaw);
+    Serial.println("  Gyro delta detection initialized");
   }
   else {
     Serial.println("WARNING: Initial sensor reading failed");
@@ -287,6 +296,9 @@ bool AccelerometerHandler::recoverI2C() {
   
   if (success) {
     mpuInitialized = true;
+    // Reset gyro delta detection variables after recovery
+    previousGyroRaw = 0;
+    firstReading = true;
     Serial.println("I2C bus recovery successful");
   } else {
     Serial.println("WARNING: I2C bus recovery failed, will retry later");
@@ -317,7 +329,7 @@ void AccelerometerHandler::update() {
     return;
   }
   
-  // DUAL-SENSOR IMPACT DETECTION IMPLEMENTATION
+  // DUAL-SENSOR IMPACT DETECTION IMPLEMENTATION WITH GYRO DELTA
   
   // Calculate accelerometer magnitude
   float accelMagnitude = sqrt(a.acceleration.x * a.acceleration.x + 
@@ -325,16 +337,29 @@ void AccelerometerHandler::update() {
                              a.acceleration.z * a.acceleration.z);
   uint16_t accelRaw = (uint16_t)(accelMagnitude * 100);
   
-  // Calculate gyroscope magnitude (NEW)
+  // Calculate gyroscope magnitude
   float gyroMagnitude = sqrt(g.gyro.x * g.gyro.x + 
                             g.gyro.y * g.gyro.y + 
                             g.gyro.z * g.gyro.z);
   uint16_t gyroRaw = (uint16_t)(gyroMagnitude * 100);
   
-  // NEW DUAL-SENSOR DETECTION LOGIC: (AccelMag > 7500) || (GyroMag > 1200)
+  // Calculate gyro delta (change from previous reading)
+  uint16_t gyroDelta = 0;
+  if (!firstReading) {
+    gyroDelta = abs((int16_t)gyroRaw - (int16_t)previousGyroRaw);
+  } else {
+    firstReading = false; // Mark that we've had our first reading
+  }
+  
+  // Store current reading for next delta calculation
+  previousGyroRaw = gyroRaw;
+  
+  // NEW DUAL-SENSOR DETECTION LOGIC: 
+  // Accelerometer: (AccelMag > threshold) OR 
+  // Gyroscope DELTA: (GyroDelta > delta_threshold)
   bool accelThresholdExceeded = (accelRaw > IMPACT_ACCEL_THRESHOLD);
-  bool gyroThresholdExceeded = (gyroRaw > IMPACT_GYRO_THRESHOLD);
-  bool impactDetectedByEither = accelThresholdExceeded || gyroThresholdExceeded;
+  bool gyroDeltaThresholdExceeded = (gyroDelta > IMPACT_GYRO_DELTA_THRESHOLD);
+  bool impactDetectedByEither = accelThresholdExceeded || gyroDeltaThresholdExceeded;
   
   // Check for impact with cooldown to prevent multiple triggers
   if (impactDetectedByEither && (millis() - lastImpactTime > impactCooldown)) {
@@ -361,16 +386,18 @@ void AccelerometerHandler::update() {
     if (!impactDetectedFlag) {
       impactDetectedFlag = true;
       
-      // ENHANCED SERIAL OUTPUT
-      Serial.println("!!! DUAL-SENSOR IMPACT DETECTED !!!");
+      // ENHANCED SERIAL OUTPUT WITH GYRO DELTA INFO
+      Serial.println("!!! DUAL-SENSOR IMPACT DETECTED (GYRO DELTA) !!!");
       Serial.print("  Type: "); Serial.println(impactTypeString);
       Serial.print("  Accel: "); Serial.print(accelRaw);
       Serial.print(" (Threshold: "); Serial.print(IMPACT_ACCEL_THRESHOLD);
       Serial.print(", Exceeded: "); Serial.print(accelThresholdExceeded ? "YES" : "NO");
       Serial.println(")");
-      Serial.print("  Gyro: "); Serial.print(gyroRaw);
-      Serial.print(" (Threshold: "); Serial.print(IMPACT_GYRO_THRESHOLD);
-      Serial.print(", Exceeded: "); Serial.print(gyroThresholdExceeded ? "YES" : "NO");
+      Serial.print("  Gyro Magnitude: "); Serial.print(gyroRaw);
+      Serial.print(" (Previous: "); Serial.print(previousGyroRaw); Serial.println(")");
+      Serial.print("  Gyro DELTA: "); Serial.print(gyroDelta);
+      Serial.print(" (Threshold: "); Serial.print(IMPACT_GYRO_DELTA_THRESHOLD);
+      Serial.print(", Exceeded: "); Serial.print(gyroDeltaThresholdExceeded ? "YES" : "NO");
       Serial.println(")");
       Serial.print("  Classification: GyroMag "); Serial.print(gyroRaw);
       Serial.print(gyroRaw >= ROTATION_CLASSIFICATION_THRESHOLD ? " >= " : " < ");
@@ -385,12 +412,14 @@ void AccelerometerHandler::update() {
   // Note: We no longer clear the flag here - it's only cleared when checked by impactDetected()
   
   // Optional debug output (enabled for debugging)
-
+  /*
   if (!impactDetectedFlag) {
     Serial.print("No impact - Accel: "); Serial.print(accelRaw);
-    Serial.print(", Gyro: "); Serial.print(gyroRaw);
+    Serial.print(", GyroMag: "); Serial.print(gyroRaw);
+    Serial.print(", GyroDelta: "); Serial.print(gyroDelta);
     Serial.print(", Cooldown: "); Serial.println(millis() - lastImpactTime <= impactCooldown ? "ACTIVE" : "INACTIVE");
   }
+  */
 
   // Make sure we don't hog the CPU
   yield();

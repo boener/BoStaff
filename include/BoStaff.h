@@ -162,6 +162,10 @@ private:
   unsigned long lastImpactTime;
   unsigned long impactCooldown;
   
+  // Gyro delta detection variables
+  uint16_t previousGyroRaw;      // Store previous gyro magnitude for delta calculation
+  bool firstReading;             // Flag to skip delta calculation on first reading
+  
   // I2C management variables
   byte consecutiveErrors;
   unsigned long lastRecoveryAttempt;
@@ -176,6 +180,7 @@ private:
 public:
   AccelerometerHandler() : mpuInitialized(false), impactDetectedFlag(false), 
                          lastImpactTime(0), impactCooldown(IMPACT_COOLDOWN),
+                         previousGyroRaw(0), firstReading(true),
                          consecutiveErrors(0), lastRecoveryAttempt(0) {}
   
   bool begin(Config* cfg);
