@@ -49,7 +49,6 @@ bool AccelerometerHandler::begin(Config* cfg) {
   Serial.print("  Accelerometer: "); Serial.println(IMPACT_ACCEL_THRESHOLD);
   Serial.print("  Gyroscope: "); Serial.println(IMPACT_GYRO_THRESHOLD);
   Serial.print("  Rotation Classification: "); Serial.println(ROTATION_CLASSIFICATION_THRESHOLD);
-  Serial.println("  NOTE: Gyroscope Y-axis excluded to ignore main-axis rotation");
   
   // Get initial reading for verification
   sensors_event_t a, g, temp;
@@ -60,8 +59,9 @@ bool AccelerometerHandler::begin(Config* cfg) {
                               a.acceleration.z * a.acceleration.z);
     uint16_t accelRaw = (uint16_t)(accelMagnitude * 100);
     
-    // Calculate gyroscope magnitude (MODIFIED: excludes Y-axis to ignore main-axis rotation)
+    // Calculate gyroscope magnitude
     float gyroMagnitude = sqrt(g.gyro.x * g.gyro.x + 
+                              g.gyro.y * g.gyro.y + 
                               g.gyro.z * g.gyro.z);
     uint16_t gyroRaw = (uint16_t)(gyroMagnitude * 100);
     
@@ -73,7 +73,7 @@ bool AccelerometerHandler::begin(Config* cfg) {
     Serial.print(" m/s^2, Raw="); Serial.println(accelRaw);
     
     Serial.print("  Gyro: X="); Serial.print(g.gyro.x);
-    Serial.print(" Y="); Serial.print(g.gyro.y); Serial.print(" (IGNORED)");
+    Serial.print(" Y="); Serial.print(g.gyro.y);
     Serial.print(" Z="); Serial.print(g.gyro.z);
     Serial.print(" rad/s, Mag="); Serial.print(gyroMagnitude);
     Serial.print(" rad/s, Raw="); Serial.println(gyroRaw);
@@ -325,8 +325,9 @@ void AccelerometerHandler::update() {
                              a.acceleration.z * a.acceleration.z);
   uint16_t accelRaw = (uint16_t)(accelMagnitude * 100);
   
-  // Calculate gyroscope magnitude (MODIFIED: excludes Y-axis to ignore main-axis rotation)
+  // Calculate gyroscope magnitude (NEW)
   float gyroMagnitude = sqrt(g.gyro.x * g.gyro.x + 
+                            g.gyro.y * g.gyro.y + 
                             g.gyro.z * g.gyro.z);
   uint16_t gyroRaw = (uint16_t)(gyroMagnitude * 100);
   
@@ -384,13 +385,12 @@ void AccelerometerHandler::update() {
   // Note: We no longer clear the flag here - it's only cleared when checked by impactDetected()
   
   // Optional debug output (enabled for debugging)
-  /*
+
   if (!impactDetectedFlag) {
     Serial.print("No impact - Accel: "); Serial.print(accelRaw);
     Serial.print(", Gyro: "); Serial.print(gyroRaw);
     Serial.print(", Cooldown: "); Serial.println(millis() - lastImpactTime <= impactCooldown ? "ACTIVE" : "INACTIVE");
   }
-  */
 
   // Make sure we don't hog the CPU
   yield();
