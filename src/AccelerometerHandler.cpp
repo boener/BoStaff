@@ -49,10 +49,10 @@ bool AccelerometerHandler::begin(Config* cfg) {
   // If we got here, the MPU initialized successfully
   mpuInitialized = true;
   Serial.println("Dual-sensor system initialized with 16G accel range and 500°/s gyro range");
-  Serial.println("NEW GYRO DELTA DETECTION THRESHOLDS:");
+  Serial.println("NEW GYRO SUDDEN STOP DETECTION THRESHOLDS:");
   Serial.print("  Accelerometer: "); Serial.println(IMPACT_ACCEL_THRESHOLD);
   Serial.print("  Gyroscope (OLD): "); Serial.println(IMPACT_GYRO_THRESHOLD);
-  Serial.print("  Gyroscope DELTA (NEW): "); Serial.println(IMPACT_GYRO_DELTA_THRESHOLD);
+  Serial.print("  Gyroscope SUDDEN STOP (NEW): "); Serial.println(IMPACT_GYRO_DELTA_THRESHOLD);
   Serial.print("  Rotation Classification: "); Serial.println(ROTATION_CLASSIFICATION_THRESHOLD);
   
   // Get initial reading for verification
@@ -85,7 +85,7 @@ bool AccelerometerHandler::begin(Config* cfg) {
     Serial.print(" Z="); Serial.print(g.gyro.z);
     Serial.print(" rad/s, Mag="); Serial.print(gyroMagnitude);
     Serial.print(" rad/s, Raw="); Serial.println(gyroRaw);
-    Serial.println("  Gyro delta detection initialized");
+    Serial.println("  Gyro sudden stop detection initialized");
   }
   else {
     Serial.println("WARNING: Initial sensor reading failed");
@@ -329,7 +329,7 @@ void AccelerometerHandler::update() {
     return;
   }
   
-  // DUAL-SENSOR IMPACT DETECTION IMPLEMENTATION WITH GYRO DELTA
+  // DUAL-SENSOR IMPACT DETECTION IMPLEMENTATION WITH GYRO SUDDEN STOP DETECTION
   
   // Calculate accelerometer magnitude
   float accelMagnitude = sqrt(a.acceleration.x * a.acceleration.x + 
@@ -343,10 +343,12 @@ void AccelerometerHandler::update() {
                             g.gyro.z * g.gyro.z);
   uint16_t gyroRaw = (uint16_t)(gyroMagnitude * 100);
   
-  // Calculate gyro delta (change from previous reading)
-  uint16_t gyroDelta = 0;
+  // Calculate gyro sudden stop detection (only detects decreases in rotation speed)
+  uint16_t gyroSuddenStop = 0;
   if (!firstReading) {
-    gyroDelta = abs((int16_t)gyroRaw - (int16_t)previousGyroRaw);
+    // Calculate change: positive value means rotation slowed down (what we want to detect)
+    int16_t gyroChange = (int16_t)previousGyroRaw - (int16_t)gyroRaw;
+    gyroSuddenStop = (gyroChange > 0) ? gyroChange : 0; // Only count decreases (sudden stops)
   } else {
     firstReading = false; // Mark that we've had our first reading
   }
@@ -356,10 +358,10 @@ void AccelerometerHandler::update() {
   
   // NEW DUAL-SENSOR DETECTION LOGIC: 
   // Accelerometer: (AccelMag > threshold) OR 
-  // Gyroscope DELTA: (GyroDelta > delta_threshold)
+  // Gyroscope SUDDEN STOP: (GyroSuddenStop > delta_threshold)
   bool accelThresholdExceeded = (accelRaw > IMPACT_ACCEL_THRESHOLD);
-  bool gyroDeltaThresholdExceeded = (gyroDelta > IMPACT_GYRO_DELTA_THRESHOLD);
-  bool impactDetectedByEither = accelThresholdExceeded || gyroDeltaThresholdExceeded;
+  bool gyroSuddenStopDetected = (gyroSuddenStop > IMPACT_GYRO_DELTA_THRESHOLD);
+  bool impactDetectedByEither = accelThresholdExceeded || gyroSuddenStopDetected;
   
   // Check for impact with cooldown to prevent multiple triggers
   if (impactDetectedByEither && (millis() - lastImpactTime > impactCooldown)) {
@@ -386,18 +388,18 @@ void AccelerometerHandler::update() {
     if (!impactDetectedFlag) {
       impactDetectedFlag = true;
       
-      // ENHANCED SERIAL OUTPUT WITH GYRO DELTA INFO
-      Serial.println("!!! DUAL-SENSOR IMPACT DETECTED (GYRO DELTA) !!!");
+      // ENHANCED SERIAL OUTPUT WITH GYRO SUDDEN STOP INFO
+      Serial.println("!!! DUAL-SENSOR IMPACT DETECTED (SUDDEN STOP) !!!");
       Serial.print("  Type: "); Serial.println(impactTypeString);
       Serial.print("  Accel: "); Serial.print(accelRaw);
       Serial.print(" (Threshold: "); Serial.print(IMPACT_ACCEL_THRESHOLD);
       Serial.print(", Exceeded: "); Serial.print(accelThresholdExceeded ? "YES" : "NO");
       Serial.println(")");
-      Serial.print("  Gyro Magnitude: "); Serial.print(gyroRaw);
+      Serial.print("  Gyro: "); Serial.print(gyroRaw);
       Serial.print(" (Previous: "); Serial.print(previousGyroRaw); Serial.println(")");
-      Serial.print("  Gyro DELTA: "); Serial.print(gyroDelta);
+      Serial.print("  Gyro SUDDEN STOP: "); Serial.print(gyroSuddenStop);
       Serial.print(" (Threshold: "); Serial.print(IMPACT_GYRO_DELTA_THRESHOLD);
-      Serial.print(", Exceeded: "); Serial.print(gyroDeltaThresholdExceeded ? "YES" : "NO");
+      Serial.print(", Detected: "); Serial.print(gyroSuddenStopDetected ? "YES" : "NO");
       Serial.println(")");
       Serial.print("  Classification: GyroMag "); Serial.print(gyroRaw);
       Serial.print(gyroRaw >= ROTATION_CLASSIFICATION_THRESHOLD ? " >= " : " < ");
@@ -416,7 +418,7 @@ void AccelerometerHandler::update() {
   if (!impactDetectedFlag) {
     Serial.print("No impact - Accel: "); Serial.print(accelRaw);
     Serial.print(", GyroMag: "); Serial.print(gyroRaw);
-    Serial.print(", GyroDelta: "); Serial.print(gyroDelta);
+    Serial.print(", GyroSuddenStop: "); Serial.print(gyroSuddenStop);
     Serial.print(", Cooldown: "); Serial.println(millis() - lastImpactTime <= impactCooldown ? "ACTIVE" : "INACTIVE");
   }
   */
