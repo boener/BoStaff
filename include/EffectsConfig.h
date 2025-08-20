@@ -8,7 +8,7 @@
 // ---------------------------------------------------------------------------
 
 // MASTER DEBUG FLAG - Comment out this line to disable ALL serial debugging for maximum performance
-// #define ENABLE_SERIAL_DEBUG
+// #define ENABLE_SERIAL_DEBUG  // Uncomment this line to enable serial debugging
 
 // Debug output macros - these completely eliminate debug code when ENABLE_SERIAL_DEBUG is not defined
 #ifdef ENABLE_SERIAL_DEBUG
@@ -29,7 +29,8 @@
 
 // Performance-critical debug flag for high-frequency operations (like accelerometer updates)
 // This can be disabled separately for ultra-high performance while keeping other debug output
-// #define ENABLE_PERFORMANCE_DEBUG
+// #define ENABLE_PERFORMANCE_DEBUG // Uncomment this line to enable performance-critical debug output
+// Note: This is separate from ENABLE_SERIAL_DEBUG above to allow high-frequency debug without slowing down other operations
 
 #ifdef ENABLE_PERFORMANCE_DEBUG
   #define PERF_DEBUG_PRINT(x)    DEBUG_PRINT(x)
@@ -60,10 +61,10 @@
 // #define IMPACT_THRESHOLD 1600         // Default impact detection threshold (~1.6G)
 
 // NEW DUAL-SENSOR IMPACT DETECTION THRESHOLDS
-#define IMPACT_ACCEL_THRESHOLD 3000    // Total magnitude threshold for side swings (reduced from 4500 to 3000)
-#define IMPACT_INDIVIDUAL_AXIS_THRESHOLD 1600  // Individual axis threshold for straight stabs
-#define IMPACT_GYRO_DELTA_THRESHOLD 500   // 4.0 rad/s change in raw format (gyroscope delta threshold for sudden rotation changes)
-#define ROTATION_CLASSIFICATION_THRESHOLD 630  // 6.3 rad/s in raw format (rotation vs stab classification)
+#define IMPACT_ACCEL_THRESHOLD 4500    // Total magnitude threshold for side swings
+#define IMPACT_INDIVIDUAL_AXIS_THRESHOLD 2700  // Individual axis threshold for straight stabs
+#define IMPACT_GYRO_DELTA_THRESHOLD 600   // 4.0 rad/s change in raw format (gyroscope delta threshold for sudden rotation changes)
+#define ROTATION_CLASSIFICATION_THRESHOLD 730  // 6.3 rad/s in raw format (rotation vs stab classification)
 
 #define IMPACT_COOLDOWN 330           // Minimum time between impacts in milliseconds - Was 500
 #define IMPACT_COLOR CRGB::BlueViolet // Color of the impact flash (dimmed white)
