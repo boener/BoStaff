@@ -11,7 +11,7 @@
 // #define ENABLE_SERIAL_DEBUG  // Uncomment this line to enable serial debugging
 
 // Debug output macros - these completely eliminate debug code when ENABLE_SERIAL_DEBUG is not defined
-#ifdef ENABLE_SERIAL_DEBUG
+#ifdef ENABLE_SERIAL_DEBUG //The IF in this ifDEFINED is whether the ENABLE_SERIAL_DEBUG aboive is commented out or not
   #define DEBUG_PRINT(x)         Serial.print(x)
   #define DEBUG_PRINTLN(x)       Serial.println(x)
   #define DEBUG_PRINTF(...)      Serial.printf(__VA_ARGS__)
