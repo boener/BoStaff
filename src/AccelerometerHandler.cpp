@@ -49,9 +49,10 @@ bool AccelerometerHandler::begin(Config* cfg) {
   // If we got here, the MPU initialized successfully
   mpuInitialized = true;
   DEBUG_PRINTLN("Dual-sensor system initialized with 16G accel range and 500°/s gyro range");
-  DEBUG_PRINTLN("NEW GYRO SUDDEN STOP DETECTION THRESHOLDS:");
-  DEBUG_PRINT("  Accelerometer: "); DEBUG_PRINTLN(IMPACT_ACCEL_THRESHOLD);
-  DEBUG_PRINT("  Gyroscope SUDDEN STOP (NEW): "); DEBUG_PRINTLN(IMPACT_GYRO_DELTA_THRESHOLD);
+  DEBUG_PRINTLN("HYBRID ACCELEROMETER DETECTION THRESHOLDS:");
+  DEBUG_PRINT("  Total Magnitude: "); DEBUG_PRINTLN(IMPACT_ACCEL_THRESHOLD);
+  DEBUG_PRINT("  Individual Axis: "); DEBUG_PRINTLN(IMPACT_INDIVIDUAL_AXIS_THRESHOLD);
+  DEBUG_PRINT("  Gyroscope SUDDEN STOP: "); DEBUG_PRINTLN(IMPACT_GYRO_DELTA_THRESHOLD);
   DEBUG_PRINT("  Rotation Classification: "); DEBUG_PRINTLN(ROTATION_CLASSIFICATION_THRESHOLD);
   
   // Get initial reading for verification
@@ -84,7 +85,7 @@ bool AccelerometerHandler::begin(Config* cfg) {
     DEBUG_PRINT(" Z="); DEBUG_PRINT(g.gyro.z);
     DEBUG_PRINT(" rad/s, Mag="); DEBUG_PRINT(gyroMagnitude);
     DEBUG_PRINT(" rad/s, Raw="); DEBUG_PRINTLN(gyroRaw);
-    DEBUG_PRINTLN("  Gyro sudden stop detection initialized");
+    DEBUG_PRINTLN("  Hybrid accelerometer detection initialized");
   }
   else {
     DEBUG_PRINTLN("WARNING: Initial sensor reading failed");
@@ -355,10 +356,15 @@ void AccelerometerHandler::update() {
   // Store current reading for next delta calculation
   previousGyroRaw = gyroRaw;
   
-  // NEW DUAL-SENSOR DETECTION LOGIC: 
-  // Accelerometer: (AccelMag > threshold) OR 
-  // Gyroscope SUDDEN STOP: (GyroSuddenStop > delta_threshold)
-  bool accelThresholdExceeded = (accelRaw > IMPACT_ACCEL_THRESHOLD);
+  // HYBRID ACCELEROMETER DETECTION LOGIC:
+  // Detects impacts through EITHER total magnitude OR individual axis exceeding thresholds
+  bool totalMagnitudeExceeded = (accelRaw > IMPACT_ACCEL_THRESHOLD);
+  float maxAxis = max(max(abs(a.acceleration.x), abs(a.acceleration.y)), abs(a.acceleration.z));
+  uint16_t maxAxisRaw = (uint16_t)(maxAxis * 100);
+  bool individualAxisExceeded = (maxAxisRaw > IMPACT_INDIVIDUAL_AXIS_THRESHOLD);
+  bool accelThresholdExceeded = totalMagnitudeExceeded || individualAxisExceeded;
+  
+  // Continue with existing gyroscope detection (unchanged)
   bool gyroSuddenStopDetected = (gyroSuddenStop > IMPACT_GYRO_DELTA_THRESHOLD);
   bool impactDetectedByEither = accelThresholdExceeded || gyroSuddenStopDetected;
   
@@ -387,12 +393,16 @@ void AccelerometerHandler::update() {
     if (!impactDetectedFlag) {
       impactDetectedFlag = true;
       
-      // ENHANCED SERIAL OUTPUT WITH GYRO SUDDEN STOP INFO - using PERF_DEBUG for performance-critical output
-      PERF_DEBUG_PRINTLN("!!! DUAL-SENSOR IMPACT DETECTED (SUDDEN STOP) !!!");
+      // ENHANCED SERIAL OUTPUT WITH HYBRID ACCELEROMETER INFO
+      PERF_DEBUG_PRINTLN("!!! HYBRID ACCELEROMETER IMPACT DETECTED !!!");
       PERF_DEBUG_PRINT("  Type: "); PERF_DEBUG_PRINTLN(impactTypeString);
-      PERF_DEBUG_PRINT("  Accel: "); PERF_DEBUG_PRINT(accelRaw);
+      PERF_DEBUG_PRINT("  Total Magnitude: "); PERF_DEBUG_PRINT(accelRaw);
       PERF_DEBUG_PRINT(" (Threshold: "); PERF_DEBUG_PRINT(IMPACT_ACCEL_THRESHOLD);
-      PERF_DEBUG_PRINT(", Exceeded: "); PERF_DEBUG_PRINT(accelThresholdExceeded ? "YES" : "NO");
+      PERF_DEBUG_PRINT(", Exceeded: "); PERF_DEBUG_PRINT(totalMagnitudeExceeded ? "YES" : "NO");
+      PERF_DEBUG_PRINTLN(")");
+      PERF_DEBUG_PRINT("  Max Individual Axis: "); PERF_DEBUG_PRINT(maxAxisRaw);
+      PERF_DEBUG_PRINT(" (Threshold: "); PERF_DEBUG_PRINT(IMPACT_INDIVIDUAL_AXIS_THRESHOLD);
+      PERF_DEBUG_PRINT(", Exceeded: "); PERF_DEBUG_PRINT(individualAxisExceeded ? "YES" : "NO");
       PERF_DEBUG_PRINTLN(")");
       PERF_DEBUG_PRINT("  Gyro: "); PERF_DEBUG_PRINT(gyroRaw);
       PERF_DEBUG_PRINT(" (Previous: "); PERF_DEBUG_PRINT(previousGyroRaw); PERF_DEBUG_PRINTLN(")");
@@ -415,7 +425,8 @@ void AccelerometerHandler::update() {
   // Optional debug output (enabled for debugging) - using PERF_DEBUG for performance-critical output
   /*
   if (!impactDetectedFlag) {
-    PERF_DEBUG_PRINT("No impact - Accel: "); PERF_DEBUG_PRINT(accelRaw);
+    PERF_DEBUG_PRINT("No impact - TotalMag: "); PERF_DEBUG_PRINT(accelRaw);
+    PERF_DEBUG_PRINT(", MaxAxis: "); PERF_DEBUG_PRINT(maxAxisRaw);
     PERF_DEBUG_PRINT(", GyroMag: "); PERF_DEBUG_PRINT(gyroRaw);
     PERF_DEBUG_PRINT(", GyroSuddenStop: "); PERF_DEBUG_PRINT(gyroSuddenStop);
     PERF_DEBUG_PRINT(", Cooldown: "); PERF_DEBUG_PRINTLN(millis() - lastImpactTime <= impactCooldown ? "ACTIVE" : "INACTIVE");
