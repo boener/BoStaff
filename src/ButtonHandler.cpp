@@ -15,7 +15,7 @@ void ButtonHandler::begin(Config* cfg) {
   lastDebounceTime = 0;
   modeChange = false;
   
-  Serial.println(F("Button handler initialized"));
+  DEBUG_PRINTLN_F("Button handler initialized");
 }
 
 /**
@@ -44,7 +44,7 @@ void ButtonHandler::handle() {
       // Button press detected (on press, not release)
       if (buttonState) {
         modeChange = true;
-        Serial.println(F("Button pressed - mode change requested"));
+        DEBUG_PRINTLN_F("Button pressed - mode change requested");
       }
     }
   }

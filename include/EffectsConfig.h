@@ -4,6 +4,42 @@
 #include <FastLED.h>
 
 // ---------------------------------------------------------------------------
+// SERIAL DEBUG CONTROL SYSTEM
+// ---------------------------------------------------------------------------
+
+// MASTER DEBUG FLAG - Comment out this line to disable ALL serial debugging for maximum performance
+// #define ENABLE_SERIAL_DEBUG
+
+// Debug output macros - these completely eliminate debug code when ENABLE_SERIAL_DEBUG is not defined
+#ifdef ENABLE_SERIAL_DEBUG
+  #define DEBUG_PRINT(x)         Serial.print(x)
+  #define DEBUG_PRINTLN(x)       Serial.println(x)
+  #define DEBUG_PRINTF(...)      Serial.printf(__VA_ARGS__)
+  #define DEBUG_BEGIN(x)         Serial.begin(x)
+  #define DEBUG_PRINT_F(x)       Serial.print(F(x))
+  #define DEBUG_PRINTLN_F(x)     Serial.println(F(x))
+#else
+  #define DEBUG_PRINT(x)         // No-op when debugging disabled
+  #define DEBUG_PRINTLN(x)       // No-op when debugging disabled  
+  #define DEBUG_PRINTF(...)      // No-op when debugging disabled
+  #define DEBUG_BEGIN(x)         // No-op when debugging disabled
+  #define DEBUG_PRINT_F(x)       // No-op when debugging disabled
+  #define DEBUG_PRINTLN_F(x)     // No-op when debugging disabled
+#endif
+
+// Performance-critical debug flag for high-frequency operations (like accelerometer updates)
+// This can be disabled separately for ultra-high performance while keeping other debug output
+// #define ENABLE_PERFORMANCE_DEBUG
+
+#ifdef ENABLE_PERFORMANCE_DEBUG
+  #define PERF_DEBUG_PRINT(x)    DEBUG_PRINT(x)
+  #define PERF_DEBUG_PRINTLN(x)  DEBUG_PRINTLN(x)
+#else
+  #define PERF_DEBUG_PRINT(x)    // No-op when performance debugging disabled
+  #define PERF_DEBUG_PRINTLN(x)  // No-op when performance debugging disabled
+#endif
+
+// ---------------------------------------------------------------------------
 // BRIGHTNESS SETTINGS
 // ---------------------------------------------------------------------------
 
@@ -24,8 +60,8 @@
 // #define IMPACT_THRESHOLD 1600         // Default impact detection threshold (~1.6G)
 
 // NEW DUAL-SENSOR IMPACT DETECTION THRESHOLDS
-#define IMPACT_ACCEL_THRESHOLD 4500    // 45.0 m/s² in raw format (accelerometer threshold) - Was 7500
-#define IMPACT_GYRO_DELTA_THRESHOLD 400   // 4.0 rad/s change in raw format (gyroscope delta threshold for sudden rotation changes)
+#define IMPACT_ACCEL_THRESHOLD 1600    // 45.0 m/s² in raw format (accelerometer threshold) - Was 7500, then 4500
+#define IMPACT_GYRO_DELTA_THRESHOLD 300   // 4.0 rad/s change in raw format (gyroscope delta threshold for sudden rotation changes) was 400
 #define ROTATION_CLASSIFICATION_THRESHOLD 630  // 6.3 rad/s in raw format (rotation vs stab classification)
 
 #define IMPACT_COOLDOWN 330           // Minimum time between impacts in milliseconds - Was 500

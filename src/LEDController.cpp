@@ -54,7 +54,7 @@ void LEDController::begin(Config* cfg) {
   currentMode = config->currentMode;
   
   // Setup the single LED strip
-  Serial.println("Initializing single LED strip with four segments");
+  DEBUG_PRINTLN("Initializing single LED strip with four segments");
   FastLED.addLeds<WS2812B, LED_PIN, GRB>(leds, NUM_LEDS_TOTAL).setCorrection(TypicalLEDStrip);
   
   // Set maximum power limit to avoid current issues (3A at 5V = 15W)
@@ -80,9 +80,9 @@ void LEDController::begin(Config* cfg) {
   // Initialize frame rate control variables
   lastUpdate = millis();
   
-  Serial.println("LED Controller initialized with single strip");
-  Serial.print("Brightness set to: "); Serial.println(normalBrightness);
-  Serial.print("Impact brightness set to: "); Serial.println(config->impactBrightness);
+  DEBUG_PRINTLN("LED Controller initialized with single strip");
+  DEBUG_PRINT("Brightness set to: "); DEBUG_PRINTLN(normalBrightness);
+  DEBUG_PRINT("Impact brightness set to: "); DEBUG_PRINTLN(config->impactBrightness);
 }
 
 void LEDController::update() {
@@ -94,7 +94,7 @@ void LEDController::update() {
       // Impact effect is over, restore normal brightness
       impactEffectActive = false;
       restorePreviousBrightness();
-      Serial.println("Impact effect ended, restored normal brightness");
+      DEBUG_PRINTLN("Impact effect ended, restored normal brightness");
       
       // Clear all LEDs after impact to prevent any artifacts
       fill_solid(leds, NUM_LEDS_TOTAL, CRGB::Black);
@@ -156,8 +156,8 @@ void LEDController::setMode(uint8_t mode) {
     fill_solid(leds, NUM_LEDS_TOTAL, CRGB::Black);
     safeStripRefresh();
     
-    Serial.print("Mode changed to: ");
-    Serial.println(currentMode);
+    DEBUG_PRINT("Mode changed to: ");
+    DEBUG_PRINTLN(currentMode);
   }
 }
 
@@ -168,9 +168,9 @@ void LEDController::triggerImpactEffect() {
   impactEffectStart = millis();
   currentBrightnessMode = BRIGHTNESS_IMPACT;
   
-  Serial.println("Impact effect triggered");
-  Serial.print("Saved normal brightness: "); Serial.println(savedBrightness);
-  Serial.print("Impact brightness: "); Serial.println(config->impactBrightness); 
+  DEBUG_PRINTLN("Impact effect triggered");
+  DEBUG_PRINT("Saved normal brightness: "); DEBUG_PRINTLN(savedBrightness);
+  DEBUG_PRINT("Impact brightness: "); DEBUG_PRINTLN(config->impactBrightness); 
 }
 
 // Enhanced brightness management methods
@@ -189,14 +189,14 @@ void LEDController::setBrightness(uint8_t brightness) {
       currentBrightnessMode = BRIGHTNESS_NORMAL;
     }
     
-    Serial.print("Brightness set to: "); 
-    Serial.println(brightness);
+    DEBUG_PRINT("Brightness set to: "); 
+    DEBUG_PRINTLN(brightness);
   } else {
     // If impact effect is active, store for later but don't apply yet
     normalBrightness = brightness;
     config->brightness = brightness;
-    Serial.print("Brightness updated (will apply after impact effect): "); 
-    Serial.println(brightness);
+    DEBUG_PRINT("Brightness updated (will apply after impact effect): "); 
+    DEBUG_PRINTLN(brightness);
   }
 }
 
@@ -213,27 +213,27 @@ void LEDController::setBrightnessMode(BrightnessMode mode) {
   switch (mode) {
     case BRIGHTNESS_NORMAL:
       FastLED.setBrightness(normalBrightness);
-      Serial.print("Brightness mode set to NORMAL: ");
-      Serial.println(normalBrightness);
+      DEBUG_PRINT("Brightness mode set to NORMAL: ");
+      DEBUG_PRINTLN(normalBrightness);
       break;
       
     case BRIGHTNESS_IMPACT:
       // This is usually handled by triggerImpactEffect()
       FastLED.setBrightness(config->impactBrightness);
-      Serial.print("Brightness mode set to IMPACT: ");
-      Serial.println(config->impactBrightness);
+      DEBUG_PRINT("Brightness mode set to IMPACT: ");
+      DEBUG_PRINTLN(config->impactBrightness);
       break;
       
     case BRIGHTNESS_LOW_BATTERY:
       FastLED.setBrightness(LOW_BATTERY_BRIGHTNESS);
-      Serial.print("Brightness mode set to LOW_BATTERY: ");
-      Serial.println(LOW_BATTERY_BRIGHTNESS);
+      DEBUG_PRINT("Brightness mode set to LOW_BATTERY: ");
+      DEBUG_PRINTLN(LOW_BATTERY_BRIGHTNESS);
       break;
       
     case BRIGHTNESS_SLEEP:
       FastLED.setBrightness(DIM_BEFORE_SLEEP);
-      Serial.print("Brightness mode set to SLEEP: ");
-      Serial.println(DIM_BEFORE_SLEEP);
+      DEBUG_PRINT("Brightness mode set to SLEEP: ");
+      DEBUG_PRINTLN(DIM_BEFORE_SLEEP);
       break;
   }
   
@@ -246,8 +246,8 @@ void LEDController::restorePreviousBrightness() {
   config->brightness = savedBrightness;
   currentBrightnessMode = BRIGHTNESS_NORMAL;
   
-  Serial.print("Restored previous brightness: ");
-  Serial.println(savedBrightness);
+  DEBUG_PRINT("Restored previous brightness: ");
+  DEBUG_PRINTLN(savedBrightness);
 }
 
 uint8_t LEDController::getCurrentBrightness() {
@@ -269,7 +269,7 @@ void LEDController::forceRefresh() {
   // Set brightness to correct value
   FastLED.setBrightness(normalBrightness);
   
-  Serial.println("LED strip forcefully refreshed");
+  DEBUG_PRINTLN("LED strip forcefully refreshed");
 }
 
 // Effect implementation for solid color

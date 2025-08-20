@@ -17,9 +17,9 @@ void PowerManager::begin() {
   brightnessChangeRequested = false;
   preparingForSleep = false;
   
-  Serial.println(F("Power Manager initialized"));
-  Serial.print(F("Battery voltage: ")); Serial.print(batteryVoltage); Serial.println(F("V"));
-  Serial.print(F("Activity timeout: ")); Serial.print(ACTIVITY_TIMEOUT_MINS); Serial.println(F(" minutes"));
+  DEBUG_PRINTLN_F("Power Manager initialized");
+  DEBUG_PRINT_F("Battery voltage: "); DEBUG_PRINT(batteryVoltage); DEBUG_PRINTLN_F("V");
+  DEBUG_PRINT_F("Activity timeout: "); DEBUG_PRINT(ACTIVITY_TIMEOUT_MINS); DEBUG_PRINTLN_F(" minutes");
 }
 
 float PowerManager::readBatteryVoltage() {
@@ -43,7 +43,7 @@ void PowerManager::update() {
       requestedBrightnessMode = BRIGHTNESS_LOW_BATTERY;
       brightnessChangeRequested = true;
       
-      Serial.println(F("Low battery mode activated"));
+      DEBUG_PRINTLN_F("Low battery mode activated");
     } else if (batteryVoltage > (BATTERY_MIN_VOLTAGE + 0.2) && lowBatteryMode) {
       // Restore normal operation when voltage is back up
       lowBatteryMode = false;
@@ -52,14 +52,14 @@ void PowerManager::update() {
       requestedBrightnessMode = BRIGHTNESS_NORMAL;
       brightnessChangeRequested = true;
       
-      Serial.println(F("Normal power mode restored"));
+      DEBUG_PRINTLN_F("Normal power mode restored");
     }
   }
   
   // Check for inactivity timeout using the setting from EffectsConfig.h
   if (POWER_SAVING_MODE && (millis() - lastActiveTime > ACTIVITY_TIMEOUT_MINS * 60000)) {
     // Enter sleep mode to save power
-    Serial.println(F("Entering sleep mode"));
+    DEBUG_PRINTLN_F("Entering sleep mode");
     
     // Request sleep brightness mode
     requestedBrightnessMode = BRIGHTNESS_SLEEP;
@@ -75,7 +75,7 @@ void PowerManager::update() {
     // Give system time to process brightness change based on config
     if (millis() - sleepPrepStartTime >= FADE_TO_SLEEP_DURATION) {
       // Put ESP into deep sleep
-      Serial.println(F("Going to deep sleep now"));
+      DEBUG_PRINTLN_F("Going to deep sleep now");
       ESP.deepSleep(0);
     }
   }

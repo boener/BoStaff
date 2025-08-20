@@ -8,7 +8,7 @@ FireEffect::FireEffect(LEDController* ledController, int segmentLen) :
   
   // Validate inputs
   if (!ledController) {
-    Serial.println("ERROR: FireEffect created with invalid parameters");
+    DEBUG_PRINTLN("ERROR: FireEffect created with invalid parameters");
     return;
   }
   
@@ -21,17 +21,17 @@ FireEffect::FireEffect(LEDController* ledController, int segmentLen) :
     // Initialize all elements to zero
     memset(heat, 0, segmentLength * 4);
     initialized = true; // Mark as successfully initialized
-    Serial.println("FireEffect initialized with single-strip approach");
+    DEBUG_PRINTLN("FireEffect initialized with single-strip approach");
     
     // Log configuration settings from EffectsConfig.h
-    Serial.print("Fire Effect Config - Cooling: ");
-    Serial.print(FIRE_COOLING);
-    Serial.print(", Sparking: ");
-    Serial.print(FIRE_SPARKING);
-    Serial.print(", Heat Dissipation: ");
-    Serial.println(FIRE_HEAT_DISSIPATION);
+    DEBUG_PRINT("Fire Effect Config - Cooling: ");
+    DEBUG_PRINT(FIRE_COOLING);
+    DEBUG_PRINT(", Sparking: ");
+    DEBUG_PRINT(FIRE_SPARKING);
+    DEBUG_PRINT(", Heat Dissipation: ");
+    DEBUG_PRINTLN(FIRE_HEAT_DISSIPATION);
   } else {
-    Serial.println("ERROR: FireEffect failed to allocate heat arrays");
+    DEBUG_PRINTLN("ERROR: FireEffect failed to allocate heat arrays");
   }
 }
 
@@ -61,7 +61,7 @@ void FireEffect::update() {
   if (!isInitialized()) {
     static bool errorLogged = false;
     if (!errorLogged) {
-      Serial.println("ERROR: FireEffect update called on uninitialized effect");
+      DEBUG_PRINTLN("ERROR: FireEffect update called on uninitialized effect");
       errorLogged = true;
     }
     return;

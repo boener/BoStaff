@@ -16,7 +16,7 @@
 void SettingsManager::begin() {
   // Initialize EEPROM
   EEPROM.begin(EEPROM_SIZE);
-  Serial.println("Settings Manager initialized for dual-sensor system");
+  DEBUG_PRINTLN("Settings Manager initialized for dual-sensor system");
 }
 
 bool SettingsManager::loadSettings(Config* cfg) {
@@ -66,14 +66,14 @@ bool SettingsManager::loadSettings(Config* cfg) {
       cfg->impactBrightness = IMPACT_BRIGHTNESS; // Use config default
     }
     
-    Serial.println("Dual-sensor settings loaded from EEPROM");
-    Serial.print("  Impact counts - Stabs: "); Serial.print(cfg->totalStabImpacts);
-    Serial.print(", Rotations: "); Serial.println(cfg->totalRotationImpacts);
+    DEBUG_PRINTLN("Dual-sensor settings loaded from EEPROM");
+    DEBUG_PRINT("  Impact counts - Stabs: "); DEBUG_PRINT(cfg->totalStabImpacts);
+    DEBUG_PRINT(", Rotations: "); DEBUG_PRINTLN(cfg->totalRotationImpacts);
     return true;
   } 
   else if (magic1 == SETTINGS_MAGIC_BYTE_1 && magic2 == SETTINGS_MAGIC_BYTE_2) {
     // OLD SINGLE-SENSOR SYSTEM DETECTED - FORCE MIGRATION
-    Serial.println("Old single-sensor settings detected - migrating to dual-sensor system");
+    DEBUG_PRINTLN("Old single-sensor settings detected - migrating to dual-sensor system");
     
     // Read basic settings from old format but ignore old threshold
     int addr = configAddress + 2; // Skip magic bytes
@@ -108,13 +108,13 @@ bool SettingsManager::loadSettings(Config* cfg) {
       cfg->impactBrightness = IMPACT_BRIGHTNESS;
     }
     
-    Serial.println("Migration complete - saving new dual-sensor format");
+    DEBUG_PRINTLN("Migration complete - saving new dual-sensor format");
     saveSettings(cfg); // Save in new format
     return true;
   }
   else {
     // No valid settings found, use defaults
-    Serial.println("No valid settings found, using dual-sensor system defaults");
+    DEBUG_PRINTLN("No valid settings found, using dual-sensor system defaults");
     
     // Initialize with defaults
     cfg->lastImpactType = IMPACT_NONE;
@@ -158,7 +158,7 @@ void SettingsManager::saveSettings(Config* cfg) {
   // Commit the changes
   EEPROM.commit();
   
-  Serial.println("Dual-sensor settings saved to EEPROM");
-  Serial.print("  Impact counts - Stabs: "); Serial.print(cfg->totalStabImpacts);
-  Serial.print(", Rotations: "); Serial.println(cfg->totalRotationImpacts);
+  DEBUG_PRINTLN("Dual-sensor settings saved to EEPROM");
+  DEBUG_PRINT("  Impact counts - Stabs: "); DEBUG_PRINT(cfg->totalStabImpacts);
+  DEBUG_PRINT(", Rotations: "); DEBUG_PRINTLN(cfg->totalRotationImpacts);
 }

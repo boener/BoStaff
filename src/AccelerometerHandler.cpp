@@ -14,9 +14,9 @@ void AccelerometerHandler::configureI2C() {
   delay(5);
   yield();
   
-  Serial.println("I2C bus configured with:");
-  Serial.print("  Clock: "); Serial.print(I2C_CLOCK_SPEED); Serial.println(" Hz");
-  Serial.print("  Timeout: "); Serial.print(I2C_TIMEOUT); Serial.println(" ms");
+  DEBUG_PRINTLN("I2C bus configured with:");
+  DEBUG_PRINT("  Clock: "); DEBUG_PRINT(I2C_CLOCK_SPEED); DEBUG_PRINTLN(" Hz");
+  DEBUG_PRINT("  Timeout: "); DEBUG_PRINT(I2C_TIMEOUT); DEBUG_PRINTLN(" ms");
 }
 
 bool AccelerometerHandler::begin(Config* cfg) {
@@ -34,7 +34,7 @@ bool AccelerometerHandler::begin(Config* cfg) {
   // Configure I2C with centralized method
   configureI2C();
   
-  Serial.println("Initializing dual-sensor accelerometer system...");
+  DEBUG_PRINTLN("Initializing dual-sensor accelerometer system...");
   
   // Allow the I2C bus to stabilize
   delay(10);
@@ -42,17 +42,17 @@ bool AccelerometerHandler::begin(Config* cfg) {
   
   // Initialize MPU with improved error handling
   if (!setupMPU()) {
-    Serial.println("WARNING: Failed to initialize MPU6050 - will retry in update loop");
+    DEBUG_PRINTLN("WARNING: Failed to initialize MPU6050 - will retry in update loop");
     return false;
   }
   
   // If we got here, the MPU initialized successfully
   mpuInitialized = true;
-  Serial.println("Dual-sensor system initialized with 16G accel range and 500°/s gyro range");
-  Serial.println("NEW GYRO SUDDEN STOP DETECTION THRESHOLDS:");
-  Serial.print("  Accelerometer: "); Serial.println(IMPACT_ACCEL_THRESHOLD);
-  Serial.print("  Gyroscope SUDDEN STOP (NEW): "); Serial.println(IMPACT_GYRO_DELTA_THRESHOLD);
-  Serial.print("  Rotation Classification: "); Serial.println(ROTATION_CLASSIFICATION_THRESHOLD);
+  DEBUG_PRINTLN("Dual-sensor system initialized with 16G accel range and 500°/s gyro range");
+  DEBUG_PRINTLN("NEW GYRO SUDDEN STOP DETECTION THRESHOLDS:");
+  DEBUG_PRINT("  Accelerometer: "); DEBUG_PRINTLN(IMPACT_ACCEL_THRESHOLD);
+  DEBUG_PRINT("  Gyroscope SUDDEN STOP (NEW): "); DEBUG_PRINTLN(IMPACT_GYRO_DELTA_THRESHOLD);
+  DEBUG_PRINT("  Rotation Classification: "); DEBUG_PRINTLN(ROTATION_CLASSIFICATION_THRESHOLD);
   
   // Get initial reading for verification
   sensors_event_t a, g, temp;
@@ -72,22 +72,22 @@ bool AccelerometerHandler::begin(Config* cfg) {
     // Initialize previous reading for delta detection
     previousGyroRaw = gyroRaw;
     
-    Serial.println("Initial sensor readings:");
-    Serial.print("  Accel: X="); Serial.print(a.acceleration.x);
-    Serial.print(" Y="); Serial.print(a.acceleration.y);
-    Serial.print(" Z="); Serial.print(a.acceleration.z);
-    Serial.print(" m/s^2, Mag="); Serial.print(accelMagnitude);
-    Serial.print(" m/s^2, Raw="); Serial.println(accelRaw);
+    DEBUG_PRINTLN("Initial sensor readings:");
+    DEBUG_PRINT("  Accel: X="); DEBUG_PRINT(a.acceleration.x);
+    DEBUG_PRINT(" Y="); DEBUG_PRINT(a.acceleration.y);
+    DEBUG_PRINT(" Z="); DEBUG_PRINT(a.acceleration.z);
+    DEBUG_PRINT(" m/s^2, Mag="); DEBUG_PRINT(accelMagnitude);
+    DEBUG_PRINT(" m/s^2, Raw="); DEBUG_PRINTLN(accelRaw);
     
-    Serial.print("  Gyro: X="); Serial.print(g.gyro.x);
-    Serial.print(" Y="); Serial.print(g.gyro.y);
-    Serial.print(" Z="); Serial.print(g.gyro.z);
-    Serial.print(" rad/s, Mag="); Serial.print(gyroMagnitude);
-    Serial.print(" rad/s, Raw="); Serial.println(gyroRaw);
-    Serial.println("  Gyro sudden stop detection initialized");
+    DEBUG_PRINT("  Gyro: X="); DEBUG_PRINT(g.gyro.x);
+    DEBUG_PRINT(" Y="); DEBUG_PRINT(g.gyro.y);
+    DEBUG_PRINT(" Z="); DEBUG_PRINT(g.gyro.z);
+    DEBUG_PRINT(" rad/s, Mag="); DEBUG_PRINT(gyroMagnitude);
+    DEBUG_PRINT(" rad/s, Raw="); DEBUG_PRINTLN(gyroRaw);
+    DEBUG_PRINTLN("  Gyro sudden stop detection initialized");
   }
   else {
-    Serial.println("WARNING: Initial sensor reading failed");
+    DEBUG_PRINTLN("WARNING: Initial sensor reading failed");
   }
   
   return mpuInitialized;
@@ -97,11 +97,11 @@ bool AccelerometerHandler::setupMPU() {
   // Try to initialize the MPU with multiple attempts
   for (int attempt = 0; attempt < I2C_RETRY_COUNT; attempt++) {
     if (attempt > 0) {
-      Serial.print("Retrying MPU setup (attempt ");
-      Serial.print(attempt + 1);
-      Serial.print(" of ");
-      Serial.print(I2C_RETRY_COUNT);
-      Serial.println(")");
+      DEBUG_PRINT("Retrying MPU setup (attempt ");
+      DEBUG_PRINT(attempt + 1);
+      DEBUG_PRINT(" of ");
+      DEBUG_PRINT(I2C_RETRY_COUNT);
+      DEBUG_PRINTLN(")");
       
       // Short delay and yield between attempts
       delay(10 * attempt); // Increasing delay for each retry
@@ -122,8 +122,8 @@ bool AccelerometerHandler::setupMPU() {
       bool accelRangeSet = false;
       for (int i = 0; i < I2C_RETRY_COUNT && !accelRangeSet; i++) {
         if (i > 0) {
-          Serial.print("Retrying accelerometer range setting (attempt ");
-          Serial.print(i + 1); Serial.println(")");
+          DEBUG_PRINT("Retrying accelerometer range setting (attempt ");
+          DEBUG_PRINT(i + 1); DEBUG_PRINTLN(")");
           delay(10 * i); // Increasing delay for each retry
           yield();
         }
@@ -143,7 +143,7 @@ bool AccelerometerHandler::setupMPU() {
           accelRangeSet = true;
           
           // Debug output
-          Serial.println("Accelerometer range set successfully");
+          DEBUG_PRINTLN("Accelerometer range set successfully");
         }
       }
       
@@ -151,8 +151,8 @@ bool AccelerometerHandler::setupMPU() {
       bool gyroRangeSet = false;
       for (int i = 0; i < I2C_RETRY_COUNT && !gyroRangeSet; i++) {
         if (i > 0) {
-          Serial.print("Retrying gyro range setting (attempt ");
-          Serial.print(i + 1); Serial.println(")");
+          DEBUG_PRINT("Retrying gyro range setting (attempt ");
+          DEBUG_PRINT(i + 1); DEBUG_PRINTLN(")");
           delay(10 * i);
           yield();
         }
@@ -167,7 +167,7 @@ bool AccelerometerHandler::setupMPU() {
         sensors_event_t a, g, temp;
         if (mpu.getEvent(&a, &g, &temp)) {
           gyroRangeSet = true;
-          Serial.println("Gyro range set successfully");
+          DEBUG_PRINTLN("Gyro range set successfully");
         }
       }
       
@@ -175,8 +175,8 @@ bool AccelerometerHandler::setupMPU() {
       bool filterBandwidthSet = false;
       for (int i = 0; i < I2C_RETRY_COUNT && !filterBandwidthSet; i++) {
         if (i > 0) {
-          Serial.print("Retrying filter bandwidth setting (attempt ");
-          Serial.print(i + 1); Serial.println(")");
+          DEBUG_PRINT("Retrying filter bandwidth setting (attempt ");
+          DEBUG_PRINT(i + 1); DEBUG_PRINTLN(")");
           delay(10 * i);
           yield();
         }
@@ -191,7 +191,7 @@ bool AccelerometerHandler::setupMPU() {
         sensors_event_t a, g, temp;
         if (mpu.getEvent(&a, &g, &temp)) {
           filterBandwidthSet = true;
-          Serial.println("Filter bandwidth set successfully");
+          DEBUG_PRINTLN("Filter bandwidth set successfully");
         }
       }
       
@@ -199,7 +199,7 @@ bool AccelerometerHandler::setupMPU() {
       configSuccess = accelRangeSet && gyroRangeSet && filterBandwidthSet;
       
       if (!configSuccess) {
-        Serial.println("WARNING: Some MPU6050 settings could not be verified");
+        DEBUG_PRINTLN("WARNING: Some MPU6050 settings could not be verified");
       }
       
       // Wait for the sensor to stabilize, with yield to prevent WDT reset
@@ -213,11 +213,11 @@ bool AccelerometerHandler::setupMPU() {
     }
     
     // If we get here, initialization failed on this attempt
-    Serial.println("MPU initialization attempt failed");
+    DEBUG_PRINTLN("MPU initialization attempt failed");
   }
   
   // If we've tried all attempts and still failed
-  Serial.println("ERROR: Failed to find or initialize MPU6050 after multiple attempts");
+  DEBUG_PRINTLN("ERROR: Failed to find or initialize MPU6050 after multiple attempts");
   return false;
 }
 
@@ -243,7 +243,7 @@ bool AccelerometerHandler::readMPUData(sensors_event_t* a, sensors_event_t* g, s
       // Successful read, reset error counter
       if (consecutiveErrors > 0) {
         consecutiveErrors = 0;
-        Serial.println("I2C communication recovered");
+        DEBUG_PRINTLN("I2C communication recovered");
       }
       return true;
     }
@@ -256,9 +256,9 @@ bool AccelerometerHandler::readMPUData(sensors_event_t* a, sensors_event_t* g, s
   if (consecutiveErrors >= 5) {
     // Don't try recovery too frequently
     if (millis() - lastRecoveryAttempt > 5000) {
-      Serial.print("WARNING: Multiple I2C read failures (");
-      Serial.print(consecutiveErrors);
-      Serial.println(") - attempting recovery");
+      DEBUG_PRINT("WARNING: Multiple I2C read failures (");
+      DEBUG_PRINT(consecutiveErrors);
+      DEBUG_PRINTLN(") - attempting recovery");
       
       // Try to recover the I2C bus
       if (recoverI2C()) {
@@ -274,7 +274,7 @@ bool AccelerometerHandler::readMPUData(sensors_event_t* a, sensors_event_t* g, s
 }
 
 bool AccelerometerHandler::recoverI2C() {
-  Serial.println("Attempting I2C bus recovery...");
+  DEBUG_PRINTLN("Attempting I2C bus recovery...");
   
   // Try to reset the MPU6050 by re-initializing
   mpuInitialized = false;
@@ -298,9 +298,9 @@ bool AccelerometerHandler::recoverI2C() {
     // Reset gyro sudden stop detection variables after recovery
     previousGyroRaw = 0;
     firstReading = true;
-    Serial.println("I2C bus recovery successful");
+    DEBUG_PRINTLN("I2C bus recovery successful");
   } else {
-    Serial.println("WARNING: I2C bus recovery failed, will retry later");
+    DEBUG_PRINTLN("WARNING: I2C bus recovery failed, will retry later");
   }
   
   return success;
@@ -312,7 +312,7 @@ void AccelerometerHandler::update() {
     // Don't attempt initialization too frequently
     static unsigned long lastInitAttempt = 0;
     if (millis() - lastInitAttempt > 5000) {
-      Serial.println("Accelerometer not initialized, attempting to restart");
+      DEBUG_PRINTLN("Accelerometer not initialized, attempting to restart");
       begin(config);
       lastInitAttempt = millis();
     }
@@ -323,8 +323,8 @@ void AccelerometerHandler::update() {
   sensors_event_t a, g, temp;
   
   if (!readMPUData(&a, &g, &temp)) {
-    // Failed to read data
-    Serial.println("Failed to read from MPU6050");
+    // Failed to read data - using PERF_DEBUG for high-frequency output
+    PERF_DEBUG_PRINTLN("Failed to read from MPU6050");
     return;
   }
   
@@ -387,24 +387,24 @@ void AccelerometerHandler::update() {
     if (!impactDetectedFlag) {
       impactDetectedFlag = true;
       
-      // ENHANCED SERIAL OUTPUT WITH GYRO SUDDEN STOP INFO
-      Serial.println("!!! DUAL-SENSOR IMPACT DETECTED (SUDDEN STOP) !!!");
-      Serial.print("  Type: "); Serial.println(impactTypeString);
-      Serial.print("  Accel: "); Serial.print(accelRaw);
-      Serial.print(" (Threshold: "); Serial.print(IMPACT_ACCEL_THRESHOLD);
-      Serial.print(", Exceeded: "); Serial.print(accelThresholdExceeded ? "YES" : "NO");
-      Serial.println(")");
-      Serial.print("  Gyro: "); Serial.print(gyroRaw);
-      Serial.print(" (Previous: "); Serial.print(previousGyroRaw); Serial.println(")");
-      Serial.print("  Gyro SUDDEN STOP: "); Serial.print(gyroSuddenStop);
-      Serial.print(" (Threshold: "); Serial.print(IMPACT_GYRO_DELTA_THRESHOLD);
-      Serial.print(", Detected: "); Serial.print(gyroSuddenStopDetected ? "YES" : "NO");
-      Serial.println(")");
-      Serial.print("  Classification: GyroMag "); Serial.print(gyroRaw);
-      Serial.print(gyroRaw >= ROTATION_CLASSIFICATION_THRESHOLD ? " >= " : " < ");
-      Serial.print(ROTATION_CLASSIFICATION_THRESHOLD); Serial.print(" = "); Serial.println(impactTypeString);
-      Serial.print("  Impact Counts - Stabs: "); Serial.print(config->totalStabImpacts);
-      Serial.print(", Rotations: "); Serial.println(config->totalRotationImpacts);
+      // ENHANCED SERIAL OUTPUT WITH GYRO SUDDEN STOP INFO - using PERF_DEBUG for performance-critical output
+      PERF_DEBUG_PRINTLN("!!! DUAL-SENSOR IMPACT DETECTED (SUDDEN STOP) !!!");
+      PERF_DEBUG_PRINT("  Type: "); PERF_DEBUG_PRINTLN(impactTypeString);
+      PERF_DEBUG_PRINT("  Accel: "); PERF_DEBUG_PRINT(accelRaw);
+      PERF_DEBUG_PRINT(" (Threshold: "); PERF_DEBUG_PRINT(IMPACT_ACCEL_THRESHOLD);
+      PERF_DEBUG_PRINT(", Exceeded: "); PERF_DEBUG_PRINT(accelThresholdExceeded ? "YES" : "NO");
+      PERF_DEBUG_PRINTLN(")");
+      PERF_DEBUG_PRINT("  Gyro: "); PERF_DEBUG_PRINT(gyroRaw);
+      PERF_DEBUG_PRINT(" (Previous: "); PERF_DEBUG_PRINT(previousGyroRaw); PERF_DEBUG_PRINTLN(")");
+      PERF_DEBUG_PRINT("  Gyro SUDDEN STOP: "); PERF_DEBUG_PRINT(gyroSuddenStop);
+      PERF_DEBUG_PRINT(" (Threshold: "); PERF_DEBUG_PRINT(IMPACT_GYRO_DELTA_THRESHOLD);
+      PERF_DEBUG_PRINT(", Detected: "); PERF_DEBUG_PRINT(gyroSuddenStopDetected ? "YES" : "NO");
+      PERF_DEBUG_PRINTLN(")");
+      PERF_DEBUG_PRINT("  Classification: GyroMag "); PERF_DEBUG_PRINT(gyroRaw);
+      PERF_DEBUG_PRINT(gyroRaw >= ROTATION_CLASSIFICATION_THRESHOLD ? " >= " : " < ");
+      PERF_DEBUG_PRINT(ROTATION_CLASSIFICATION_THRESHOLD); PERF_DEBUG_PRINT(" = "); PERF_DEBUG_PRINTLN(impactTypeString);
+      PERF_DEBUG_PRINT("  Impact Counts - Stabs: "); PERF_DEBUG_PRINT(config->totalStabImpacts);
+      PERF_DEBUG_PRINT(", Rotations: "); PERF_DEBUG_PRINTLN(config->totalRotationImpacts);
     }
     
     lastImpactTime = millis();
@@ -412,13 +412,13 @@ void AccelerometerHandler::update() {
   }
   // Note: We no longer clear the flag here - it's only cleared when checked by impactDetected()
   
-  // Optional debug output (enabled for debugging)
+  // Optional debug output (enabled for debugging) - using PERF_DEBUG for performance-critical output
   /*
   if (!impactDetectedFlag) {
-    Serial.print("No impact - Accel: "); Serial.print(accelRaw);
-    Serial.print(", GyroMag: "); Serial.print(gyroRaw);
-    Serial.print(", GyroSuddenStop: "); Serial.print(gyroSuddenStop);
-    Serial.print(", Cooldown: "); Serial.println(millis() - lastImpactTime <= impactCooldown ? "ACTIVE" : "INACTIVE");
+    PERF_DEBUG_PRINT("No impact - Accel: "); PERF_DEBUG_PRINT(accelRaw);
+    PERF_DEBUG_PRINT(", GyroMag: "); PERF_DEBUG_PRINT(gyroRaw);
+    PERF_DEBUG_PRINT(", GyroSuddenStop: "); PERF_DEBUG_PRINT(gyroSuddenStop);
+    PERF_DEBUG_PRINT(", Cooldown: "); PERF_DEBUG_PRINTLN(millis() - lastImpactTime <= impactCooldown ? "ACTIVE" : "INACTIVE");
   }
   */
 
@@ -431,7 +431,7 @@ bool AccelerometerHandler::impactDetected() {
   bool result = impactDetectedFlag;
   if (result) {
     impactDetectedFlag = false;  // Clear the flag after reading
-    Serial.println("Impact flag checked and cleared");
+    PERF_DEBUG_PRINTLN("Impact flag checked and cleared");
   }
   return result;
 }
@@ -441,11 +441,11 @@ bool AccelerometerHandler::impactDetected() {
 void AccelerometerHandler::calibrate() {
   // CALIBRATION SYSTEM REMOVED - Dual-sensor system uses fixed thresholds
   // based on extensive data analysis. No calibration needed.
-  Serial.println("NOTICE: Calibration system removed in dual-sensor implementation.");
-  Serial.println("Using optimized fixed thresholds based on data analysis:");
-  Serial.print("  Accelerometer threshold: "); Serial.println(IMPACT_ACCEL_THRESHOLD);
-  Serial.print("  Gyroscope sudden stop threshold: "); Serial.println(IMPACT_GYRO_DELTA_THRESHOLD);
-  Serial.print("  Rotation classification: "); Serial.println(ROTATION_CLASSIFICATION_THRESHOLD);
+  DEBUG_PRINTLN("NOTICE: Calibration system removed in dual-sensor implementation.");
+  DEBUG_PRINTLN("Using optimized fixed thresholds based on data analysis:");
+  DEBUG_PRINT("  Accelerometer threshold: "); DEBUG_PRINTLN(IMPACT_ACCEL_THRESHOLD);
+  DEBUG_PRINT("  Gyroscope sudden stop threshold: "); DEBUG_PRINTLN(IMPACT_GYRO_DELTA_THRESHOLD);
+  DEBUG_PRINT("  Rotation classification: "); DEBUG_PRINTLN(ROTATION_CLASSIFICATION_THRESHOLD);
 }
 
 void AccelerometerHandler::waitForButtonPress() {

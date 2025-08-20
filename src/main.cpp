@@ -83,7 +83,7 @@ void initializeAllEffects() {
   fireEffect = new FireEffect(&ledController);
   
   if (!fireEffect || !fireEffect->isInitialized()) {
-    Serial.println(F("Error initializing FireEffect!"));
+    DEBUG_PRINTLN_F("Error initializing FireEffect!");
     allEffectsInitialized = false;
   }
   
@@ -91,7 +91,7 @@ void initializeAllEffects() {
   fireEffect1 = new FireEffect1(&ledController);
   
   if (!fireEffect1 || !fireEffect1->isInitialized()) {
-    Serial.println(F("Error initializing FireEffect1!"));
+    DEBUG_PRINTLN_F("Error initializing FireEffect1!");
     allEffectsInitialized = false;
   }
   
@@ -99,7 +99,7 @@ void initializeAllEffects() {
   fireEffect2 = new FireEffect2(&ledController);
   
   if (!fireEffect2 || !fireEffect2->isInitialized()) {
-    Serial.println(F("Error initializing FireEffect2!"));
+    DEBUG_PRINTLN_F("Error initializing FireEffect2!");
     allEffectsInitialized = false;
   }
   
@@ -107,7 +107,7 @@ void initializeAllEffects() {
   pulseEffect = new PulseEffect(&ledController);
   
   if (!pulseEffect || !pulseEffect->isInitialized()) {
-    Serial.println(F("Error initializing PulseEffect!"));
+    DEBUG_PRINTLN_F("Error initializing PulseEffect!");
     allEffectsInitialized = false;
   }
   
@@ -115,7 +115,7 @@ void initializeAllEffects() {
   pulseEffect1 = new PulseEffect1(&ledController);
   
   if (!pulseEffect1 || !pulseEffect1->isInitialized()) {
-    Serial.println(F("Error initializing PulseEffect1!"));
+    DEBUG_PRINTLN_F("Error initializing PulseEffect1!");
     allEffectsInitialized = false;
   }
   
@@ -123,7 +123,7 @@ void initializeAllEffects() {
   pulseEffect2 = new PulseEffect2(&ledController);
   
   if (!pulseEffect2 || !pulseEffect2->isInitialized()) {
-    Serial.println(F("Error initializing PulseEffect2!"));
+    DEBUG_PRINTLN_F("Error initializing PulseEffect2!");
     allEffectsInitialized = false;
   }
   
@@ -131,7 +131,7 @@ void initializeAllEffects() {
   rainbowEffect = new RainbowEffect(&ledController);
   
   if (!rainbowEffect || !rainbowEffect->isInitialized()) {
-    Serial.println(F("Error initializing RainbowEffect!"));
+    DEBUG_PRINTLN_F("Error initializing RainbowEffect!");
     allEffectsInitialized = false;
   }
   
@@ -139,7 +139,7 @@ void initializeAllEffects() {
   strobeEffect = new StrobeEffect(&ledController);
   
   if (!strobeEffect || !strobeEffect->isInitialized()) {
-    Serial.println(F("Error initializing StrobeEffect!"));
+    DEBUG_PRINTLN_F("Error initializing StrobeEffect!");
     allEffectsInitialized = false;
   }
   
@@ -150,29 +150,29 @@ void initializeAllEffects() {
   ledController.safeStripRefresh();
   
   if (allEffectsInitialized) {
-    Serial.println(F("All LED effects initialized successfully"));
+    DEBUG_PRINTLN_F("All LED effects initialized successfully");
   } else {
-    Serial.println(F("WARNING: Some LED effects failed to initialize properly"));
+    DEBUG_PRINTLN_F("WARNING: Some LED effects failed to initialize properly");
   }
 }
 
 void setup() {
   // Initialize serial communication
-  Serial.begin(SERIAL_BAUD);
-  Serial.println(F("\nBoStaff Controller Starting"));
-  Serial.print(F("Version: ")); Serial.println(VERSION);
-  Serial.print(F("Build: ")); Serial.print(BUILD_DATE); Serial.print(" "); Serial.println(BUILD_TIME);
+  DEBUG_BEGIN(SERIAL_BAUD);
+  DEBUG_PRINTLN_F("\nBoStaff Controller Starting");
+  DEBUG_PRINT_F("Version: "); DEBUG_PRINTLN(VERSION);
+  DEBUG_PRINT_F("Build: "); DEBUG_PRINT(BUILD_DATE); DEBUG_PRINT(" "); DEBUG_PRINTLN(BUILD_TIME);
   
   // Display pin configuration
-  Serial.println(F("\nPin Configuration:"));
-  Serial.print(F("LED Strip: ")); Serial.print(F("D7 (GPIO13)")); Serial.println(F(" - Single strip with 400 LEDs"));
-  Serial.print(F("MPU-6050 SCL: ")); Serial.println(F("D1 (GPIO5)"));
-  Serial.print(F("MPU-6050 SDA: ")); Serial.println(F("D2 (GPIO4)"));
-  Serial.print(F("Button: ")); Serial.println(F("D6 (GPIO12)"));
+  DEBUG_PRINTLN_F("\nPin Configuration:");
+  DEBUG_PRINT_F("LED Strip: "); DEBUG_PRINT_F("D7 (GPIO13)"); DEBUG_PRINTLN_F(" - Single strip with 400 LEDs");
+  DEBUG_PRINT_F("MPU-6050 SCL: "); DEBUG_PRINTLN_F("D1 (GPIO5)");
+  DEBUG_PRINT_F("MPU-6050 SDA: "); DEBUG_PRINTLN_F("D2 (GPIO4)");
+  DEBUG_PRINT_F("Button: "); DEBUG_PRINTLN_F("D6 (GPIO12)");
   
   // Initialize I2C for MPU-6050 (uses default pins D1/D2)
   // Note: Wire.begin is now handled in AccelerometerHandler for better control
-  Serial.println(F("I2C will be initialized by AccelerometerHandler"));
+  DEBUG_PRINTLN_F("I2C will be initialized by AccelerometerHandler");
   
   // Load settings from flash
   settingsManager.begin();
@@ -189,16 +189,16 @@ void setup() {
   
   // Initialize accelerometer (after other components to avoid I2C conflicts)
   if (accelHandler.begin(&config)) {
-    Serial.println(F("Dual-sensor accelerometer system initialized successfully"));
+    DEBUG_PRINTLN_F("Dual-sensor accelerometer system initialized successfully");
   } else {
-    Serial.println(F("WARNING: Accelerometer initialization had issues, will retry in main loop"));
+    DEBUG_PRINTLN_F("WARNING: Accelerometer initialization had issues, will retry in main loop");
   }
   
-  Serial.println(F("Initializing LED effects for single-strip with four segments:"));
-  Serial.println(F("Segment 1: LEDs 0-99 (counts up)"));
-  Serial.println(F("Segment 2: LEDs 100-199 (counts down from 199)"));
-  Serial.println(F("Segment 3: LEDs 200-299 (counts up)"));
-  Serial.println(F("Segment 4: LEDs 300-399 (counts down from 399)"));
+  DEBUG_PRINTLN_F("Initializing LED effects for single-strip with four segments:");
+  DEBUG_PRINTLN_F("Segment 1: LEDs 0-99 (counts up)");
+  DEBUG_PRINTLN_F("Segment 2: LEDs 100-199 (counts down from 199)");
+  DEBUG_PRINTLN_F("Segment 3: LEDs 200-299 (counts up)");
+  DEBUG_PRINTLN_F("Segment 4: LEDs 300-399 (counts down from 399)");
   
   // Initialize all effects
   initializeAllEffects();
@@ -206,19 +206,19 @@ void setup() {
   // Set the initial mode
   ledController.setMode(config.currentMode);
   
-  Serial.println(F("Setup complete!"));
+  DEBUG_PRINTLN_F("Setup complete!");
   
   // Show battery status
   float batteryVoltage = powerManager.getBatteryVoltage();
   float batteryPercentage = powerManager.getBatteryPercentage();
-  Serial.print(F("Battery: ")); Serial.print(batteryVoltage); Serial.print(F("V, ")); 
-  Serial.print(batteryPercentage); Serial.println(F("%"));
+  DEBUG_PRINT_F("Battery: "); DEBUG_PRINT(batteryVoltage); DEBUG_PRINT_F("V, "); 
+  DEBUG_PRINT(batteryPercentage); DEBUG_PRINTLN_F("%");
   
   // DUAL-SENSOR SYSTEM INFO - CALIBRATION NO LONGER NEEDED
-  Serial.println(F("\nDual-Sensor Impact Detection System Active"));
-  Serial.println(F("Calibration not required - using optimized fixed thresholds"));
-  Serial.print(F("Accelerometer Threshold: ")); Serial.println(IMPACT_ACCEL_THRESHOLD);
-  Serial.print(F("Rotation Classification: ")); Serial.println(ROTATION_CLASSIFICATION_THRESHOLD);
+  DEBUG_PRINTLN_F("\nDual-Sensor Impact Detection System Active");
+  DEBUG_PRINTLN_F("Calibration not required - using optimized fixed thresholds");
+  DEBUG_PRINT_F("Accelerometer Threshold: "); DEBUG_PRINTLN(IMPACT_ACCEL_THRESHOLD);
+  DEBUG_PRINT_F("Rotation Classification: "); DEBUG_PRINTLN(ROTATION_CLASSIFICATION_THRESHOLD);
   
   // Initialize loop timing variables
   lastAccelUpdate = millis();
@@ -262,8 +262,8 @@ void loop() {
   // Check for mode change request from button
   if (buttonHandler.modeChangeRequested()) {
     config.currentMode = (config.currentMode + 1) % config.numModes;
-    Serial.print(F("Mode changed to: ")); Serial.print(config.currentMode); 
-    Serial.print(F(" (")); Serial.print(EFFECT_NAMES[config.currentMode]); Serial.println(F(")"));
+    DEBUG_PRINT_F("Mode changed to: "); DEBUG_PRINT(config.currentMode); 
+    DEBUG_PRINT_F(" ("); DEBUG_PRINT(EFFECT_NAMES[config.currentMode]); DEBUG_PRINTLN_F(")");
     
     ledController.setMode(config.currentMode);
     settingsManager.saveSettings(&config);
@@ -387,8 +387,8 @@ void loop() {
       // Apply the brightness mode directly (now using the same enum)
       ledController.setBrightnessMode(newMode);
       
-      Serial.print("Brightness mode changed via PowerManager to: ");
-      Serial.println(static_cast<int>(newMode)); // Cast to int for readable output
+      DEBUG_PRINT("Brightness mode changed via PowerManager to: ");
+      DEBUG_PRINTLN(static_cast<int>(newMode)); // Cast to int for readable output
       
       // Clear the request flag
       powerManager.clearBrightnessRequest();
