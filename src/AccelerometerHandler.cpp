@@ -51,7 +51,6 @@ bool AccelerometerHandler::begin(Config* cfg) {
   Serial.println("Dual-sensor system initialized with 16G accel range and 500°/s gyro range");
   Serial.println("NEW GYRO SUDDEN STOP DETECTION THRESHOLDS:");
   Serial.print("  Accelerometer: "); Serial.println(IMPACT_ACCEL_THRESHOLD);
-  Serial.print("  Gyroscope (OLD): "); Serial.println(IMPACT_GYRO_THRESHOLD);
   Serial.print("  Gyroscope SUDDEN STOP (NEW): "); Serial.println(IMPACT_GYRO_DELTA_THRESHOLD);
   Serial.print("  Rotation Classification: "); Serial.println(ROTATION_CLASSIFICATION_THRESHOLD);
   
@@ -296,7 +295,7 @@ bool AccelerometerHandler::recoverI2C() {
   
   if (success) {
     mpuInitialized = true;
-    // Reset gyro delta detection variables after recovery
+    // Reset gyro sudden stop detection variables after recovery
     previousGyroRaw = 0;
     firstReading = true;
     Serial.println("I2C bus recovery successful");
@@ -445,7 +444,7 @@ void AccelerometerHandler::calibrate() {
   Serial.println("NOTICE: Calibration system removed in dual-sensor implementation.");
   Serial.println("Using optimized fixed thresholds based on data analysis:");
   Serial.print("  Accelerometer threshold: "); Serial.println(IMPACT_ACCEL_THRESHOLD);
-  Serial.print("  Gyroscope threshold: "); Serial.println(IMPACT_GYRO_THRESHOLD);
+  Serial.print("  Gyroscope sudden stop threshold: "); Serial.println(IMPACT_GYRO_DELTA_THRESHOLD);
   Serial.print("  Rotation classification: "); Serial.println(ROTATION_CLASSIFICATION_THRESHOLD);
 }
 

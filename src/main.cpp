@@ -218,7 +218,6 @@ void setup() {
   Serial.println(F("\nDual-Sensor Impact Detection System Active"));
   Serial.println(F("Calibration not required - using optimized fixed thresholds"));
   Serial.print(F("Accelerometer Threshold: ")); Serial.println(IMPACT_ACCEL_THRESHOLD);
-  Serial.print(F("Gyroscope Threshold: ")); Serial.println(IMPACT_GYRO_THRESHOLD);
   Serial.print(F("Rotation Classification: ")); Serial.println(ROTATION_CLASSIFICATION_THRESHOLD);
   
   // Initialize loop timing variables
