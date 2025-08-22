@@ -46,7 +46,7 @@ bool buttonWasPressed = false;
 // Timing management for task scheduling
 unsigned long lastAccelUpdate = 0;
 // Increased interval to reduce I2C conflicts (increased from 25ms to 40ms)
-const unsigned long ACCEL_UPDATE_INTERVAL = 40;
+const unsigned long ACCEL_UPDATE_INTERVAL = 5;
 
 // Timing management for better task distribution
 unsigned long lastLEDUpdate = 0;
