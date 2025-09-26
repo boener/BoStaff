@@ -47,7 +47,7 @@ enum ImpactType {
 
 // Global configuration structure
 struct Config {
-  uint8_t currentMode = EFFECT_FIRE;   // Default mode
+  uint8_t currentMode = EFFECT_FIRE;   // Default mode - will use EFFECT_FIRE which is now index 7
   uint8_t brightness = DEFAULT_BRIGHTNESS;            // Default from config
   uint8_t impactBrightness = IMPACT_BRIGHTNESS;     // From config
   uint8_t numModes = NUM_EFFECTS;      // Number of available modes
@@ -126,7 +126,13 @@ private:
   void updatePulseEffect();
   void updateRainbowEffect();
   void updateStrobeEffect();
-  void updateSolidEffect();
+  void updateSlowRainbowEffect();  // Renamed from updateSolidEffect
+  void updateSolidBlueEffect();    // New solid color effects
+  void updateSolidGreenEffect();
+  void updateSolidRedEffect();
+  void updateSolidPurpleEffect();
+  void updateSolidYellowEffect();
+  void updateSolidWhiteEffect();
   
   // Helper function to map a virtual position (0-99) to the actual folded LED position
   // This handles the four segment arrangement

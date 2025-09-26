@@ -288,9 +288,9 @@ void loop() {
   
   // Update LED effects on their own schedule
   if (millis() - lastLEDUpdate >= LED_UPDATE_INTERVAL) {
-    // Update LED effects based on current mode
+    // Update LED effects based on current mode - UPDATED FOR NEW EFFECT INDICES
     switch (config.currentMode) {
-      case EFFECT_FIRE:
+      case EFFECT_FIRE:  // Now index 7
         if (fireEffect && fireEffect->isInitialized()) {
           fireEffect->update();
         } else {
@@ -299,7 +299,7 @@ void loop() {
         }
         break;
         
-      case EFFECT_FIRE1:
+      case EFFECT_FIRE1:  // Now index 8
         if (fireEffect1 && fireEffect1->isInitialized()) {
           fireEffect1->update();
         } else {
@@ -308,7 +308,7 @@ void loop() {
         }
         break;
         
-      case EFFECT_FIRE2:
+      case EFFECT_FIRE2:  // Now index 9
         if (fireEffect2 && fireEffect2->isInitialized()) {
           fireEffect2->update();
         } else {
@@ -317,7 +317,7 @@ void loop() {
         }
         break;
         
-      case EFFECT_PULSE:
+      case EFFECT_PULSE:  // Now index 10
         if (pulseEffect && pulseEffect->isInitialized()) {
           pulseEffect->update();
         } else {
@@ -326,7 +326,7 @@ void loop() {
         }
         break;
         
-      case EFFECT_PULSE1:  // New pulse effect variant
+      case EFFECT_PULSE1:  // Now index 11
         if (pulseEffect1 && pulseEffect1->isInitialized()) {
           pulseEffect1->update();
         } else {
@@ -335,7 +335,7 @@ void loop() {
         }
         break;
         
-      case EFFECT_PULSE2:  // New pulse effect variant
+      case EFFECT_PULSE2:  // Now index 12
         if (pulseEffect2 && pulseEffect2->isInitialized()) {
           pulseEffect2->update();
         } else {
@@ -344,7 +344,7 @@ void loop() {
         }
         break;
         
-      case EFFECT_RAINBOW:
+      case EFFECT_RAINBOW:  // Now index 13
         if (rainbowEffect && rainbowEffect->isInitialized()) {
           rainbowEffect->update();
         } else {
@@ -353,7 +353,7 @@ void loop() {
         }
         break;
         
-      case EFFECT_STROBE:
+      case EFFECT_STROBE:  // Now index 14
         if (strobeEffect && strobeEffect->isInitialized()) {
           strobeEffect->update();
         } else {
@@ -362,13 +362,13 @@ void loop() {
         }
         break;
         
-      case EFFECT_SOLID:
+      // All other effects (including new solid colors and slow rainbow) are handled by LEDController
       default:
-        // Solid color effect is handled directly by LED controller
+        // No action needed - LEDController.update() will handle these
         break;
     }
     
-    // Update LED strips
+    // Update LED strips - this will handle solid colors and slow rainbow
     ledController.update();
     
     lastLEDUpdate = millis();

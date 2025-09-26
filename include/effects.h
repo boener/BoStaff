@@ -16,16 +16,22 @@ class LEDController;
 
 // Effect type enum for better code readability
 enum EffectType {
-  EFFECT_SOLID = 0,
-  EFFECT_FIRE = 1,
-  EFFECT_FIRE1 = 2,
-  EFFECT_FIRE2 = 3,
-  EFFECT_PULSE = 4,
-  EFFECT_PULSE1 = 5,
-  EFFECT_PULSE2 = 6,
-  EFFECT_RAINBOW = 7,
-  EFFECT_STROBE = 8,
-  NUM_EFFECTS
+  EFFECT_SLOW_RAINBOW = 0,  // Renamed from EFFECT_SOLID to EFFECT_SLOW_RAINBOW
+  EFFECT_SOLID_BLUE = 1,    // New solid blue effect
+  EFFECT_SOLID_GREEN = 2,   // New solid green effect
+  EFFECT_SOLID_RED = 3,     // New solid red effect
+  EFFECT_SOLID_PURPLE = 4,  // New solid purple effect
+  EFFECT_SOLID_YELLOW = 5,  // New solid yellow effect
+  EFFECT_SOLID_WHITE = 6,   // New solid white effect
+  EFFECT_FIRE = 7,          // Updated index
+  EFFECT_FIRE1 = 8,         // Updated index
+  EFFECT_FIRE2 = 9,         // Updated index
+  EFFECT_PULSE = 10,        // Updated index
+  EFFECT_PULSE1 = 11,       // Updated index
+  EFFECT_PULSE2 = 12,       // Updated index
+  EFFECT_RAINBOW = 13,      // Updated index
+  EFFECT_STROBE = 14,       // Updated index
+  NUM_EFFECTS = 15          // Updated total count
 };
 
 // Helper struct to store effect parameters

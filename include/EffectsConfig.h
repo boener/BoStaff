@@ -160,12 +160,43 @@
 #define STROBE_BRIGHTNESS 200         // Brightness of the strobe effect (0-255)
 
 // ---------------------------------------------------------------------------
-// SOLID COLOR EFFECT SETTINGS
+// SLOW RAINBOW EFFECT SETTINGS (renamed from SOLID COLOR EFFECT)
 // ---------------------------------------------------------------------------
 
-// Solid effect creates a gently shifting solid color - settings are weird, change rate at min is way too slow, WHY?
-#define SOLID_HUE_CHANGE_RATE 1       // How quickly hue changes (higher = slower change) FIX THIS, 1 is still too slow!
-#define SOLID_USE_HUE_SHIFT true      // Whether to shift hue (true) or stay fixed (false)
+// Slow rainbow effect creates a gently shifting solid color through all hues
+#define SLOW_RAINBOW_HUE_CHANGE_RATE 1  // How quickly hue changes (higher = slower change)
+#define SLOW_RAINBOW_USE_HUE_SHIFT true // Whether to shift hue (true) or stay fixed (false)
+
+// ---------------------------------------------------------------------------
+// SOLID COLOR EFFECT SETTINGS (NEW - for true solid colors)
+// ---------------------------------------------------------------------------
+
+// Solid color effects - these are completely static colors with configurable brightness
+// Each solid color can have its brightness adjusted independently
+
+// Solid Blue Effect
+#define SOLID_BLUE_COLOR CRGB::Blue     // Color for solid blue effect
+#define SOLID_BLUE_BRIGHTNESS 255       // Brightness for solid blue effect (0-255)
+
+// Solid Green Effect  
+#define SOLID_GREEN_COLOR CRGB::Green   // Color for solid green effect
+#define SOLID_GREEN_BRIGHTNESS 255      // Brightness for solid green effect (0-255)
+
+// Solid Red Effect
+#define SOLID_RED_COLOR CRGB::Red       // Color for solid red effect
+#define SOLID_RED_BRIGHTNESS 255        // Brightness for solid red effect (0-255)
+
+// Solid Purple Effect
+#define SOLID_PURPLE_COLOR CRGB::Purple // Color for solid purple effect
+#define SOLID_PURPLE_BRIGHTNESS 255     // Brightness for solid purple effect (0-255)
+
+// Solid Yellow Effect
+#define SOLID_YELLOW_COLOR CRGB::Yellow // Color for solid yellow effect
+#define SOLID_YELLOW_BRIGHTNESS 255     // Brightness for solid yellow effect (0-255)
+
+// Solid White Effect
+#define SOLID_WHITE_COLOR CRGB::White   // Color for solid white effect
+#define SOLID_WHITE_BRIGHTNESS 255      // Brightness for solid white effect (0-255)
 
 // ---------------------------------------------------------------------------
 // POWER MANAGEMENT SETTINGS

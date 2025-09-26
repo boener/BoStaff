@@ -135,9 +135,33 @@ void LEDController::update() {
   
   // Only update LED buffer if no impact effect is active
   if (!impactEffectActive) {
-    // For compatibility with old code, we'll keep the solid color effect here
-    if (currentMode == EFFECT_SOLID) {
-      updateSolidEffect();
+    // Handle effects based on current mode - UPDATED FOR NEW EFFECTS
+    switch (currentMode) {
+      case EFFECT_SLOW_RAINBOW:
+        updateSlowRainbowEffect();
+        break;
+      case EFFECT_SOLID_BLUE:
+        updateSolidBlueEffect();
+        break;
+      case EFFECT_SOLID_GREEN:
+        updateSolidGreenEffect();
+        break;
+      case EFFECT_SOLID_RED:
+        updateSolidRedEffect();
+        break;
+      case EFFECT_SOLID_PURPLE:
+        updateSolidPurpleEffect();
+        break;
+      case EFFECT_SOLID_YELLOW:
+        updateSolidYellowEffect();
+        break;
+      case EFFECT_SOLID_WHITE:
+        updateSolidWhiteEffect();
+        break;
+      default:
+        // For modes not handled here, fall back to solid red
+        fill_solid(leds, NUM_LEDS_TOTAL, CRGB::Red);
+        break;
     }
     
     safeStripRefresh();
@@ -272,22 +296,108 @@ void LEDController::forceRefresh() {
   DEBUG_PRINTLN("LED strip forcefully refreshed");
 }
 
-// Effect implementation for solid color
-void LEDController::updateSolidEffect() {
+// EFFECT IMPLEMENTATIONS
+
+// Slow Rainbow Effect (renamed from updateSolidEffect)
+void LEDController::updateSlowRainbowEffect() {
   // Use configuration settings
-  uint8_t hueChangeRate = SOLID_HUE_CHANGE_RATE;
+  uint8_t hueChangeRate = SLOW_RAINBOW_HUE_CHANGE_RATE;
   
   // Create color based on configuration
   CRGB color;
   
-  if (SOLID_USE_HUE_SHIFT) {
+  if (SLOW_RAINBOW_USE_HUE_SHIFT) {
     // Slowly changing hue
     color = CHSV(effectStep / hueChangeRate, 255, 255);
   } else {
-    // Fixed color
-    color = CRGB::Red; // Default solid color
+    // Fixed color (fallback)
+    color = CRGB::Red;
   }
   
   // Apply the same color to all LEDs
+  fill_solid(leds, NUM_LEDS_TOTAL, color);
+}
+
+// Solid Blue Effect
+void LEDController::updateSolidBlueEffect() {
+  // Create the configured blue color
+  CRGB color = SOLID_BLUE_COLOR;
+  
+  // Apply brightness scaling if configured differently than FastLED brightness
+  if (SOLID_BLUE_BRIGHTNESS != 255) {
+    color.fadeToBlackBy(255 - SOLID_BLUE_BRIGHTNESS);
+  }
+  
+  // Apply the color to all LEDs
+  fill_solid(leds, NUM_LEDS_TOTAL, color);
+}
+
+// Solid Green Effect
+void LEDController::updateSolidGreenEffect() {
+  // Create the configured green color
+  CRGB color = SOLID_GREEN_COLOR;
+  
+  // Apply brightness scaling if configured differently than FastLED brightness
+  if (SOLID_GREEN_BRIGHTNESS != 255) {
+    color.fadeToBlackBy(255 - SOLID_GREEN_BRIGHTNESS);
+  }
+  
+  // Apply the color to all LEDs
+  fill_solid(leds, NUM_LEDS_TOTAL, color);
+}
+
+// Solid Red Effect
+void LEDController::updateSolidRedEffect() {
+  // Create the configured red color
+  CRGB color = SOLID_RED_COLOR;
+  
+  // Apply brightness scaling if configured differently than FastLED brightness
+  if (SOLID_RED_BRIGHTNESS != 255) {
+    color.fadeToBlackBy(255 - SOLID_RED_BRIGHTNESS);
+  }
+  
+  // Apply the color to all LEDs
+  fill_solid(leds, NUM_LEDS_TOTAL, color);
+}
+
+// Solid Purple Effect
+void LEDController::updateSolidPurpleEffect() {
+  // Create the configured purple color
+  CRGB color = SOLID_PURPLE_COLOR;
+  
+  // Apply brightness scaling if configured differently than FastLED brightness
+  if (SOLID_PURPLE_BRIGHTNESS != 255) {
+    color.fadeToBlackBy(255 - SOLID_PURPLE_BRIGHTNESS);
+  }
+  
+  // Apply the color to all LEDs
+  fill_solid(leds, NUM_LEDS_TOTAL, color);
+}
+
+// Solid Yellow Effect
+void LEDController::updateSolidYellowEffect() {
+  // Create the configured yellow color
+  CRGB color = SOLID_YELLOW_COLOR;
+  
+  // Apply brightness scaling if configured differently than FastLED brightness
+  if (SOLID_YELLOW_BRIGHTNESS != 255) {
+    color.fadeToBlackBy(255 - SOLID_YELLOW_BRIGHTNESS);
+  }
+  
+  // Apply the color to all LEDs
+  fill_solid(leds, NUM_LEDS_TOTAL, color);
+}
+
+// Solid White Effect
+void LEDController::updateSolidWhiteEffect() {
+  // Create the configured white color
+  CRGB color = SOLID_WHITE_COLOR;
+  
+  // Apply brightness scaling if configured differently than FastLED brightness
+  if (SOLID_WHITE_BRIGHTNESS != 255) {
+    color.fadeToBlackBy(255 - SOLID_WHITE_BRIGHTNESS);
+  }
+  
+  // Apply the color to all LEDs
   fill_solid(leds, NUM_LEDS_TOTAL, color);
 }
