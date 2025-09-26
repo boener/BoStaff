@@ -61,8 +61,8 @@
 // #define IMPACT_THRESHOLD 1600         // Default impact detection threshold (~1.6G)
 
 // NEW DUAL-SENSOR IMPACT DETECTION THRESHOLDS
-#define IMPACT_ACCEL_THRESHOLD 4500    // Total magnitude threshold for side swings
-#define IMPACT_INDIVIDUAL_AXIS_THRESHOLD 2700  // Individual axis threshold for straight stabs
+#define IMPACT_ACCEL_THRESHOLD 3500    // Total magnitude threshold for side swings (orig 4500)
+#define IMPACT_INDIVIDUAL_AXIS_THRESHOLD 2000  // Individual axis threshold for straight stabs (orig 2700)
 #define IMPACT_GYRO_DELTA_THRESHOLD 600   // 4.0 rad/s change in raw format (gyroscope delta threshold for sudden rotation changes)
 #define ROTATION_CLASSIFICATION_THRESHOLD 730  // 6.3 rad/s in raw format (rotation vs stab classification)
 
