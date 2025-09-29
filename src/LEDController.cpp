@@ -135,36 +135,45 @@ void LEDController::update() {
   
   // Only update LED buffer if no impact effect is active
   if (!impactEffectActive) {
-    // Handle effects based on current mode - UPDATED FOR NEW EFFECTS
+    // ONLY handle effects that are NOT handled by effect objects in main.cpp
+    // These are the solid colors and slow rainbow effects
+    // All dynamic effects (Fire, Pulse, Rainbow, Strobe) are handled in main.cpp
     switch (currentMode) {
       case EFFECT_SLOW_RAINBOW:
         updateSlowRainbowEffect();
+        safeStripRefresh();
         break;
       case EFFECT_SOLID_BLUE:
         updateSolidBlueEffect();
+        safeStripRefresh();
         break;
       case EFFECT_SOLID_GREEN:
         updateSolidGreenEffect();
+        safeStripRefresh();
         break;
       case EFFECT_SOLID_RED:
         updateSolidRedEffect();
+        safeStripRefresh();
         break;
       case EFFECT_SOLID_PURPLE:
         updateSolidPurpleEffect();
+        safeStripRefresh();
         break;
       case EFFECT_SOLID_YELLOW:
         updateSolidYellowEffect();
+        safeStripRefresh();
         break;
       case EFFECT_SOLID_WHITE:
         updateSolidWhiteEffect();
+        safeStripRefresh();
         break;
       default:
-        // For modes not handled here, fall back to solid red
-        fill_solid(leds, NUM_LEDS_TOTAL, CRGB::Red);
+        // For dynamic effects (Fire, Pulse, Rainbow, Strobe), 
+        // do nothing here - they are handled by main.cpp
+        // Just refresh the strip to show what the effect objects have rendered
+        safeStripRefresh();
         break;
     }
-    
-    safeStripRefresh();
     
     // Increment effect step for animations
     effectStep++;
